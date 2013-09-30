@@ -10,6 +10,7 @@ import game.TrackerAction;
 import geom.GridCell;
 import geom.TargetGrid;
 
+import java.awt.geom.Point2D;
 import java.util.List;
 
 import divergence.MotionHistory;
@@ -110,6 +111,17 @@ public class Tracker implements Agent {
 		GridCell current = grid.getCell(targetInitialStates.get(0).getPosition());
 		System.out.println(current);
 		System.out.println(next);
+		
+		System.out.println("Tracker: " + myInitialState.getPosition());
+		System.out.println("Target: " + targetInitialStates.get(0).getPosition());
+		
+		System.out.println("Distance to target: " + getDistanceToTarget(myInitialState, targetInitialStates.get(0)));
+		System.out.println("Tracker heading angle: " + myInitialState.getHeading());
+		System.out.println("Target heading angle: " + Math.toDegrees(targetInitialStates.get(0).getHeading()));
+		
+		System.out.println("Angle to target: " + getAngleToTarget(myInitialState, targetInitialStates.get(0)));
+		
+		
 
 	}
 
@@ -167,6 +179,31 @@ public class Tracker implements Agent {
 		GridCell current = grid.getCell(myState.getPosition());
 		GridCell next = targetPolicy.getNextIndex(current);
 		double heading = grid.getHeading(grid.encodeFromIndices(current, next));
-		return new TrackerAction(myState, heading, 1.0 / grid.getGridSize());
+		return new TrackerAction(myState, 0, 0);
+	}
+	
+	public static double getDistanceToTarget(AgentState trackerState, AgentState targetState)
+	{
+		Point2D trackerPos = trackerState.getPosition();
+		Point2D targetPos = targetState.getPosition();
+		
+		return trackerPos.distance(targetPos);
+	}
+	
+	public static double getAngleToTarget(AgentState trackerState, AgentState targetState)
+	{
+		Point2D trackerPos = trackerState.getPosition();
+		Point2D targetPos = targetState.getPosition();
+		
+		double trackerX = trackerPos.getX();
+		double trackerY = trackerPos.getY();
+		double targetX = targetPos.getX();
+		double targetY = targetPos.getY();
+		
+		// 'Move' the target as  if the tracker is on (0,0)
+		targetX = targetX - trackerX;
+		targetY = targetY - trackerY;	
+		
+		return Math.atan2(targetY, targetX);
 	}
 }
