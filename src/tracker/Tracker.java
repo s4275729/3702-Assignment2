@@ -10,10 +10,11 @@ import game.TrackerAction;
 import geom.GridCell;
 import geom.TargetGrid;
 
+import java.awt.geom.Point2D;
 import java.util.List;
 
-import divergence.MotionHistory;
 import target.TargetPolicy;
+import divergence.MotionHistory;
 
 public class Tracker implements Agent {
 	/** The number of targets. */
@@ -41,6 +42,11 @@ public class Tracker implements Agent {
 	/** The goal region. */
 	private RectRegion goalRegion;
 
+	/** 
+	 * 
+	 */
+	private GridCell currentTarget;
+	
 	/**
 	 * Constructs a tracker with the given parameters.
 	 * 
@@ -105,12 +111,7 @@ public class Tracker implements Agent {
 		// TODO Write this method!
 
 		TargetGrid grid = targetPolicy.getGrid();
-		GridCell next = targetPolicy.getNextIndex( grid.getCell(targetInitialStates.get(0).getPosition()));
-
-		GridCell current = grid.getCell(targetInitialStates.get(0).getPosition());
-		System.out.println(current);
-		System.out.println(next);
-
+		currentTarget = grid.getCell(targetInitialStates.get(0).getPosition());
 	}
 
 	@Override
@@ -146,7 +147,7 @@ public class Tracker implements Agent {
 	 * targets. 
 	 * In order to win the game, your score will need to be higher than
 	 * the total of all of the target scores.
-	 * Normally numTargets = 1, so scores will only consist of two numbers.
+	 * Normally numTargets = 1, so scores will only consist of two numbers.\
 	 * 
 	 * @param newPercepts any percepts obtained by your tracker since
 	 * its last turn.
@@ -162,11 +163,26 @@ public class Tracker implements Agent {
 		AgentState myState = previousResult.getResultingState();
 
 		// TODO Write this method!
-		
 		TargetGrid grid = targetPolicy.getGrid();
-		GridCell current = grid.getCell(myState.getPosition());
+		GridCell targetNext = targetPolicy.getNextIndex(currentTarget);
+		double heading = getHeading(myState, grid.getCentre(currentTarget));
+		currentTarget = targetNext;
+		
+		if (newPercepts.size() != 0 ) {
+			AgentState agentState = newPercepts.get(newPercepts.size()-1).getAgentState();
+		}
+		/*GridCell current = grid.getCell(myState.getPosition());
 		GridCell next = targetPolicy.getNextIndex(current);
 		double heading = grid.getHeading(grid.encodeFromIndices(current, next));
+		*/
 		return new TrackerAction(myState, heading, 1.0 / grid.getGridSize());
+	}
+	
+	public double getHeading(AgentState currentState, Point2D target) {
+		double deltaY = target.getY() - currentState.getPosition().getY();
+		double deltaX = target.getX() - currentState.getPosition().getX();
+		
+		double heading = Math.atan2(deltaY, deltaX);
+		return heading;
 	}
 }
