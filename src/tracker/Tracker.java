@@ -14,6 +14,7 @@ import java.awt.geom.Point2D;
 import java.util.List;
 
 import divergence.MotionHistory;
+import divergence.MotionHistory.HistoryEntry;
 import target.TargetPolicy;
 
 public class Tracker implements Agent {
@@ -205,5 +206,29 @@ public class Tracker implements Agent {
 		targetY = targetY - trackerY;	
 		
 		return Math.atan2(targetY, targetX);
+	}
+	
+	public double[] getDivergenceProbability(int desiredAction)
+	{
+		List<HistoryEntry> history = targetMotionHistory.getHistory();
+		double[] probabilities = new double[8];
+		
+		int count = 0;
+		for(HistoryEntry entry : history)
+		{
+			if(entry.getDesiredActionCode() == desiredAction)
+			{
+				int resultAction = entry.getResultCode();
+				probabilities[resultAction]++;
+				count++;
+			}
+		}
+		
+		for(int i = 0; i < probabilities.length; i++)
+		{
+			probabilities[i] = probabilities[i] / count;
+		}
+		
+		return probabilities;
 	}
 }

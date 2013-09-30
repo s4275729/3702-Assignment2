@@ -1,6 +1,6 @@
 1
-A1
-targetPolicy.txt
+A2
+targetPolicy.txt targetMotionHistory.txt
 60 0.2
 B1
 -
