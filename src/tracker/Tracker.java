@@ -121,8 +121,6 @@ public class Tracker implements Agent {
 		System.out.println("Target heading angle: " + Math.toDegrees(targetInitialStates.get(0).getHeading()));
 		
 		System.out.println("Angle to target: " + getAngleToTarget(myInitialState, targetInitialStates.get(0)));
-		
-		
 
 	}
 
@@ -211,7 +209,7 @@ public class Tracker implements Agent {
 	public double[] getDivergenceProbability(int desiredAction)
 	{
 		List<HistoryEntry> history = targetMotionHistory.getHistory();
-		double[] probabilities = new double[8];
+		double[] probabilities = new double[9];
 		
 		int count = 0;
 		for(HistoryEntry entry : history)
@@ -224,9 +222,16 @@ public class Tracker implements Agent {
 			}
 		}
 		
-		for(int i = 0; i < probabilities.length; i++)
+		if(count != 0)
 		{
-			probabilities[i] = probabilities[i] / count;
+			for(int i = 0; i < probabilities.length; i++)
+			{
+				probabilities[i] = probabilities[i] / count;
+			}
+		}
+		else
+		{
+			return null;
 		}
 		
 		return probabilities;
