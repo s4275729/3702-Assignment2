@@ -172,13 +172,8 @@ public class Tracker implements Agent {
 		// get expected action from policy
 
 		game.Action expectedAction= null;
-		try {
 		expectedAction = targetPolicy.getAction(targetState);
-		}
-		catch(NullPointerException e) {
-			System.out.print(targetState);
-		} finally {
-		}
+	
 		// calculate probability of diverging according to past history
 		double[] divergentProbabilities = getDivergenceProbability(grid
 				.encodeAction(expectedAction));
