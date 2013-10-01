@@ -1027,6 +1027,7 @@ public class GameRunner {
 			System.err.println("Failed to load setup file: " + e.getMessage());
 			return;
 		}
+
 		int numGames = 1000;
 		int numWins = 0;
 		int numLoss = 0;
