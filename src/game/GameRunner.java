@@ -1027,17 +1027,22 @@ public class GameRunner {
 			System.err.println("Failed to load setup file: " + e.getMessage());
 			return;
 		}
-		int numGames = 1;
+
+		int numGames = 1000;
 		int numWins = 0;
+		int numLoss = 0;
+		int numDraw = 0;
 		for (int i = 0; i < numGames; i++) {
 			int result = runner.runVerbose(outputFile, true);
 			runner.saveHistory();
 			if (result == 1) {
 				numWins += 1;
-			}
+			} else if (result==0) numDraw+=1;
+			else if (result == -1) numLoss +=1;
+			
 		}
-		System.out.println(String.format("Tracker won %d of %d games.",
-				numWins, numGames));
+		System.out.println(String.format("Tracker won %d of %d games. Lose: %d, Draw: %d",
+				numWins, numGames, numLoss, numDraw));
 		try {
 			runner.getRuntimeTargetMotionHistory().writeToFile(
 					"targetMotionHistory.txt");

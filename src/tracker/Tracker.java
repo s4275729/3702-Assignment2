@@ -12,7 +12,7 @@ import geom.TargetGrid;
 
 import java.awt.geom.Point2D;
 import java.util.List;
-
+import java.util.Random;
 import divergence.MotionHistory;
 import divergence.MotionHistory.HistoryEntry;
 import target.TargetPolicy;
@@ -42,6 +42,12 @@ public class Tracker implements Agent {
 	private List<RectRegion> obstacles;
 	/** The goal region. */
 	private RectRegion goalRegion;
+
+	/** 
+	 * 
+	 */
+	private GridCell currentTarget;
+	private AgentState targetState;
 
 	/**
 	 * Constructs a tracker with the given parameters.
@@ -107,6 +113,7 @@ public class Tracker implements Agent {
 		// TODO Write this method!
 
 		TargetGrid grid = targetPolicy.getGrid();
+
 		GridCell next = targetPolicy.getNextIndex( grid.getCell(targetInitialStates.get(0).getPosition()));
 
 		GridCell current = grid.getCell(targetInitialStates.get(0).getPosition());
@@ -116,11 +123,15 @@ public class Tracker implements Agent {
 		System.out.println("Tracker: " + myInitialState.getPosition());
 		System.out.println("Target: " + targetInitialStates.get(0).getPosition());
 		
-		System.out.println("Distance to target: " + getDistanceToTarget(myInitialState, targetInitialStates.get(0)));
+		System.out.println("Distance to target: " + TrackerTools.getDistanceToTarget(myInitialState, targetInitialStates.get(0)));
 		System.out.println("Tracker heading angle: " + myInitialState.getHeading());
 		System.out.println("Target heading angle: " + Math.toDegrees(targetInitialStates.get(0).getHeading()));
 		
-		System.out.println("Angle to target: " + getAngleToTarget(myInitialState, targetInitialStates.get(0)));
+		System.out.println("Angle to target: " + TrackerTools.getAngleToTarget(myInitialState, targetInitialStates.get(0)));
+
+
+		currentTarget = grid.getCell(targetInitialStates.get(0).getPosition());
+		targetState = targetInitialStates.get(0);
 
 	}
 
@@ -157,7 +168,7 @@ public class Tracker implements Agent {
 	 * targets. 
 	 * In order to win the game, your score will need to be higher than
 	 * the total of all of the target scores.
-	 * Normally numTargets = 1, so scores will only consist of two numbers.
+	 * Normally numTargets = 1, so scores will only consist of two numbers.\
 	 * 
 	 * @param newPercepts any percepts obtained by your tracker since
 	 * its last turn.
@@ -173,67 +184,70 @@ public class Tracker implements Agent {
 		AgentState myState = previousResult.getResultingState();
 
 		// TODO Write this method!
-		
+		AgentState nextTargetState = null;
 		TargetGrid grid = targetPolicy.getGrid();
-		GridCell current = grid.getCell(myState.getPosition());
-		GridCell next = targetPolicy.getNextIndex(current);
-		double heading = grid.getHeading(grid.encodeFromIndices(current, next));
-		return new TrackerAction(myState, 0, 0);
+
+		// get expected action from policy
+
+		game.Action expectedAction= null;
+		expectedAction = targetPolicy.getAction(targetState);
+
+		game.Action expectedAction1 = null;
+		expectedAction1 = targetPolicy.getAction(targetState);
+		// calculate probability of diverging according to past history
+		double[] divergentProbabilities = TrackerTools
+				.getDivergenceProbability(targetMotionHistory,
+						grid.encodeAction(expectedAction1));
+		if (divergentProbabilities != null) {
+			// if there is a probability of diverging, calculate next state
+			// according to probability of divergence
+			int nextAction = getActionCode(divergentProbabilities);
+			GridCell nextCell = grid.decodeFromIndices(
+					grid.getCell(targetState.getPosition()), nextAction);
+			nextTargetState = new AgentState(grid.getCentre(nextCell),
+					nextAction);
+
+		} else {
+			// if no known probability of diverging, next state will be
+			// according to the policy
+			nextTargetState = expectedAction1.getResultingState();
+		}
+		double heading = TrackerTools.getAngleToTarget(myState, targetState);
+		targetState = nextTargetState;
+		if (newPercepts.size() != 0) {
+			AgentState agentState = newPercepts.get(newPercepts.size() - 1)
+					.getAgentState();
+			heading = TrackerTools.getAngleToTarget(myState, agentState);
+			targetState = agentState;
+
+		}
+
+		System.out.println(TrackerTools.utility(myState, targetState, targetSensingParams,
+				mySensingParams, obstacles));
+		return new TrackerAction(myState, heading, 1.0 / grid.getGridSize());
+
 	}
-	
-	public static double getDistanceToTarget(AgentState trackerState, AgentState targetState)
-	{
-		Point2D trackerPos = trackerState.getPosition();
-		Point2D targetPos = targetState.getPosition();
-		
-		return trackerPos.distance(targetPos);
-	}
-	
-	public static double getAngleToTarget(AgentState trackerState, AgentState targetState)
-	{
-		Point2D trackerPos = trackerState.getPosition();
-		Point2D targetPos = targetState.getPosition();
-		
-		double trackerX = trackerPos.getX();
-		double trackerY = trackerPos.getY();
-		double targetX = targetPos.getX();
-		double targetY = targetPos.getY();
-		
-		// 'Move' the target as  if the tracker is on (0,0)
-		targetX = targetX - trackerX;
-		targetY = targetY - trackerY;	
-		
-		return Math.atan2(targetY, targetX);
-	}
-	
-	public double[] getDivergenceProbability(int desiredAction)
-	{
-		List<HistoryEntry> history = targetMotionHistory.getHistory();
-		double[] probabilities = new double[9];
-		
-		int count = 0;
-		for(HistoryEntry entry : history)
-		{
-			if(entry.getDesiredActionCode() == desiredAction)
-			{
-				int resultAction = entry.getResultCode();
-				probabilities[resultAction]++;
-				count++;
+
+	public int getActionCode(double[] probability) {
+		int action = -1;
+		double sum = 0;
+		Random r = new Random();
+		double random = r.nextDouble();
+		for (int i = 0; i < 9; i++) {
+
+			if (probability[i] == 0)
+				continue;
+			if (random >= sum && random < sum + probability[i]) {
+				action = i;
+				break;
+
 			}
+			sum = sum + probability[i];
 		}
 		
-		if(count != 0)
-		{
-			for(int i = 0; i < probabilities.length; i++)
-			{
-				probabilities[i] = probabilities[i] / count;
-			}
+		if (action == -1) {
+			System.out.println(probability[0]);
 		}
-		else
-		{
-			return null;
-		}
-		
-		return probabilities;
+		return action;
 	}
 }
