@@ -198,12 +198,11 @@ public class Tracker implements Agent {
 		double[] divergentProbabilities = TrackerTools
 				.getDivergenceProbability(targetMotionHistory,
 						grid.encodeAction(expectedAction1));
-		if (divergentProbabilities != null) {
+		/*if (divergentProbabilities != null) {
 			// if there is a probability of diverging, calculate next state
 			// according to probability of divergence
 			int nextAction = getActionCode(divergentProbabilities);
-			GridCell nextCell = grid.decodeFromIndices(
-					grid.getCell(targetState.getPosition()), nextAction);
+			GridCell nextCell = grid.decodeFromIndices(grid.getCell(targetState.getPosition()), nextAction);
 			nextTargetState = new AgentState(grid.getCentre(nextCell),
 					nextAction);
 
@@ -218,14 +217,16 @@ public class Tracker implements Agent {
 			AgentState agentState = newPercepts.get(newPercepts.size() - 1)
 					.getAgentState();
 			heading = TrackerTools.getAngleToTarget(myState, agentState);
+			System.out.println("Heading angle: " + heading);
 			targetState = agentState;
 
-		}
+		}*/
 
 		System.out.println(TrackerTools.utility(myState, targetState, targetSensingParams,
 				mySensingParams, obstacles));
-		return new TrackerAction(myState, heading, 1.0 / grid.getGridSize());
-
+		
+		//return new TrackerAction(myState, heading, 1.0 / grid.getGridSize());
+		return TrackerTools.maximumUtility(1, targetPolicy, targetState, divergentProbabilities, myState, targetSensingParams, mySensingParams, obstacles);
 	}
 
 	public int getActionCode(double[] probability) {

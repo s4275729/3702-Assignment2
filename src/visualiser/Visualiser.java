@@ -558,12 +558,12 @@ public class Visualiser {
 		GameState state = vp.getCurrentState();
 		if (state.isGameComplete()) {
 			infoLabel.setText("Game complete! " + state.getResultString());
-//			gameRunner.resetHistory();
-//			gameRunner.saveHistory();
-//			System.out.println("Tracker motion history:");
-//			System.out.println(gameRunner.getRuntimeTrackerMotionHistory());
-//			System.out.println("Target motion history:");
-//			System.out.println(gameRunner.getRuntimeTargetMotionHistory());
+			// gameRunner.resetHistory();
+			// gameRunner.saveHistory();
+			// System.out.println("Tracker motion history:");
+			// System.out.println(gameRunner.getRuntimeTrackerMotionHistory());
+			// System.out.println("Target motion history:");
+			// System.out.println(gameRunner.getRuntimeTargetMotionHistory());
 		} else if (state.isTrackerTurn()) {
 			infoLabel.setText("Tracker to act.");
 		} else {
@@ -627,9 +627,29 @@ public class Visualiser {
 	public static void main(String[] args) {
 		JFrame frame = new JFrame("Assignment 1 visualiser");
 		Visualiser vis = new Visualiser(frame);
-		if (args.length > 0) {
-			vis.loadSetup(new File(args[0]));
+		String setupFile = null;
+		String targetFile = null;
+		String trackerFile = null;
+		for (int i = 0; i < args.length; i++) {
+			String arg = args[i].trim();
+			if (setupFile == null) {
+				setupFile = arg;
+			} else if (targetFile == null) {
+				targetFile = arg;
+			} else if (trackerFile == null) {
+				trackerFile = arg;
+			}
 		}
+		if (targetFile != null) {
+			vis.gameRunner.setTargetDistribution(targetFile);
+		}
+		if (trackerFile != null) {
+			vis.gameRunner.setTrackerDistribution(trackerFile);
+		}
+		if (setupFile != null) {
+			vis.loadSetup(new File(setupFile));
+		}
+
 		frame.setSize(800, 1000);
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
