@@ -85,11 +85,11 @@ public class TrackerTools {
 				// Iterate through the possible next states of the target
 				for (int i = 0; i < probs.length; i++) {
 					// If the target has a probability to do action i
-					if (probs[i] != 0) {
-						GridCell nextCell = grid.decodeFromIndices(
-								grid.getCell(targetState.getPosition()), i);
-						AgentState resultTargetState = new AgentState(
-								grid.getCentre(nextCell), i);
+					if (probs[i] != 0) 
+					{
+						GridCell nextCell = grid.decodeFromIndices(grid.getCell(targetState.getPosition()), i);
+						
+						AgentState resultTargetState = new AgentState(grid.getCentre(nextCell), grid.getHeading(i));
 
 						// Calculate the utility of the resulting tracker state
 						// and
@@ -170,22 +170,43 @@ public class TrackerTools {
 	 * @return
 	 */
 	public static double[] getTargetDivergenceProbability(MotionHistory mh,
-			int desiredAction, TargetGrid grid) {
+			int desiredAction, TargetGrid grid, AgentState targetState, List<RectRegion> obstacles) {
 		List<HistoryEntry> history = mh.getHistory();
-		double[] probabilities = new double[9];
+		
+		double[] resultActionCount = new double[9];
 
 		int count = 0;
 		for (HistoryEntry entry : history) {
 			if (entry.getDesiredActionCode() == desiredAction) {
 				int resultAction = entry.getResultCode();
-				probabilities[resultAction]++;
+				resultActionCount[resultAction]++;
 				count++;
 			}
 		}
 
+		double[] probabilities = new double[9];
 		if (count != 0) {
-			for (int i = 0; i < probabilities.length; i++) {
-				probabilities[i] = probabilities[i] / count;
+			for (int i = 0; i < resultActionCount.length; i++) {
+				probabilities[i] += resultActionCount[i] / count;
+				
+				if(probabilities[i] > 0)
+				{
+					GridCell nextCell = grid.decodeFromIndices(grid.getCell(targetState.getPosition()), i);
+					AgentState resultTargetState = new AgentState(grid.getCentre(nextCell), grid.getHeading(i));
+					
+					boolean canMove = GeomTools.canMove(
+							targetState.getPosition(),
+							resultTargetState.getPosition(),
+							targetState.hasCamera(),
+							targetState.getCameraArmLength(),
+							obstacles);
+					
+					if(!canMove)
+					{
+						probabilities[4] += probabilities[i];
+						probabilities[i] = 0;
+					}
+				}
 			}
 		} else {
 			return null;
@@ -198,20 +219,22 @@ public class TrackerTools {
 			List<RectRegion> obstacles) {
 		List<HistoryEntry> history = mh.getHistory();
 
-		double[] probabilities = new double[25];
+		double[] resultActionCount = new double[25];
+		
 
 		int count = 0;
 		for (HistoryEntry entry : history) {
 			if (entry.getDesiredActionCode() == desiredAction) {
 				int resultAction = entry.getResultCode();
-				probabilities[resultAction]++;
+				resultActionCount[resultAction]++;
 				count++;
 			}
 		}
 
+		double[] probabilities = new double[25];
 		if (count != 0) {
-			for (int i = 0; i < probabilities.length; i++) {
-				probabilities[i] = probabilities[i] / count;
+			for (int i = 0; i < resultActionCount.length; i++) {
+				probabilities[i] += resultActionCount[i] / count;
 
 				if (probabilities[i] > 0) {
 					AgentState nextTrackerState = getNextTrackerState(

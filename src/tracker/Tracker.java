@@ -183,19 +183,20 @@ public class Tracker implements Agent {
 		game.Action expectedAction1 = null;
 		expectedAction1 = targetPolicy.getAction(targetState);
 		// calculate probability of diverging according to past history
-		double[] divergentProbabilities = TrackerTools
+		double[] targetProbs = TrackerTools
 				.getTargetDivergenceProbability(targetMotionHistory,
-						grid.encodeAction(expectedAction1), grid);
+						grid.encodeAction(expectedAction1), grid, currentTargetState, obstacles);
 		targetState = expectedAction1.getResultingState();
 		
-		/*double[] trackerProbs = TrackerTools.getTrackerDivergenceProbability(myMotionHistory, 23, myState, grid, obstacles);
-		for(int i=0; i < trackerProbs.length; i++)
+		/*double[] trackerProbs = TrackerTools.getTrackerDivergenceProbability(myMotionHistory, 23, myState, grid, obstacles);*/
+		/*for(int i=0; i < targetProbs.length; i++)
 		{
-			System.out.println("Desired action 23, result: " + i + " " + trackerProbs[i]);
-		}*/
+			System.out.println("Desired action " + grid.encodeAction(expectedAction1) + ", result: " + i + " " + targetProbs[i]);
+		}
+		System.out.println();*/
 		
 		TrackerTools.maxUtility(2, targetPolicy,
-				currentTargetState, divergentProbabilities, myState,
+				currentTargetState, targetProbs, myState,
 				targetSensingParams, mySensingParams, obstacles);
 		
 		return TrackerTools.a;
