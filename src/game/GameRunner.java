@@ -1088,18 +1088,21 @@ public class GameRunner {
 			return;
 		}
 		
-		int numGames = 1;
+		int numGames = 10000;
 		//int numGames = 1;
 		int numWins = 0;
+		int numLoses = 0;
+		int numDraw = 0;
 		for (int i = 0; i < numGames; i++) {
 			int result = runner.runVerbose(outputFile, true);
 			runner.saveHistory();
 			if (result == 1) {
 				numWins += 1;
-			}
+			} else if (result == 0) numDraw +=1;
+			else if (result == -1) numLoses +=1;
 		}
-		System.out.println(String.format("Tracker won %d of %d games.",
-				numWins, numGames));
+		System.out.println(String.format("Tracker won %d of %d games. Draws: %d Loses: %d",
+				numWins, numGames, numDraw, numLoses));
 		/*
 		 * try { runner.getRuntimeTargetMotionHistory().writeToFile(
 		 * "targetMotionHistory.txt");

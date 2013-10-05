@@ -113,35 +113,6 @@ public class Tracker implements Agent {
 		// TODO Write this method!
 
 		TargetGrid grid = targetPolicy.getGrid();
-
-		GridCell next = targetPolicy.getNextIndex(grid
-				.getCell(targetInitialStates.get(0).getPosition()));
-
-		GridCell current = grid.getCell(targetInitialStates.get(0)
-				.getPosition());/*
-								 * System.out.println(current);
-								 * System.out.println(next);
-								 * 
-								 * System.out.println("Tracker: " +
-								 * myInitialState.getPosition());
-								 * System.out.println("Target: " +
-								 * targetInitialStates.get(0).getPosition());
-								 * 
-								 * System.out.println("Distance to target: " +
-								 * TrackerTools
-								 * .getDistanceToTarget(myInitialState,
-								 * targetInitialStates.get(0)));
-								 * System.out.println("Tracker heading angle: "
-								 * + myInitialState.getHeading());
-								 * System.out.println("Target heading angle: " +
-								 * Math
-								 * .toDegrees(targetInitialStates.get(0).getHeading
-								 * ()));
-								 * 
-								 * System.out.println("Angle to target: " +
-								 * TrackerTools.getAngleToTarget(myInitialState,
-								 * targetInitialStates.get(0)));
-								 */
 		currentTarget = grid.getCell(targetInitialStates.get(0).getPosition());
 		targetState = targetInitialStates.get(0);
 
@@ -216,28 +187,6 @@ public class Tracker implements Agent {
 				.getDivergenceProbability(targetMotionHistory,
 						grid.encodeAction(expectedAction1));
 		targetState = expectedAction1.getResultingState();
-
-		/*
-		 * if (divergentProbabilities != null) { // if there is a probability of
-		 * diverging, calculate next state // according to probability of
-		 * divergence int nextAction = getActionCode(divergentProbabilities);
-		 * GridCell nextCell =
-		 * grid.decodeFromIndices(grid.getCell(targetState.getPosition()),
-		 * nextAction); nextTargetState = new
-		 * AgentState(grid.getCentre(nextCell), nextAction);
-		 * 
-		 * } else { // if no known probability of diverging, next state will be
-		 * // according to the policy nextTargetState =
-		 * expectedAction1.getResultingState(); } double heading =
-		 * TrackerTools.getAngleToTarget(myState, targetState); targetState =
-		 * nextTargetState;
-		 */
-		System.out.println(TrackerTools.utility(myState, targetState,
-				targetSensingParams, mySensingParams, obstacles));
-
-		// return new TrackerAction(myState, heading, 1.0 / grid.getGridSize());
-		//TrackerAction a = new TrackerAction(myState, 90); 
-
 
 		TrackerTools.maxUtility(2, targetPolicy,
 				currentTargetState, divergentProbabilities, myState,
