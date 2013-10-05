@@ -194,7 +194,7 @@ public class Tracker implements Agent {
 			System.out.println("Desired action 23, result: " + i + " " + trackerProbs[i]);
 		}*/
 		
-		TrackerTools.maxUtility(3, targetPolicy,
+		TrackerTools.maxUtility(2, targetPolicy,
 				currentTargetState, divergentProbabilities, myState,
 				targetSensingParams, mySensingParams, obstacles);
 		
