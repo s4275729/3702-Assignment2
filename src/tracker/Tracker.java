@@ -184,20 +184,27 @@ public class Tracker implements Agent {
 		AgentState myState = previousResult.getResultingState();
 
 		// TODO Write this method!
-		AgentState nextTargetState = null;
 		TargetGrid grid = targetPolicy.getGrid();
 
 		// get expected action from policy
 
-		game.Action expectedAction= null;
-		expectedAction = targetPolicy.getAction(targetState);
+		if (newPercepts.size() != 0) {
+			AgentState agentState = newPercepts.get(newPercepts.size() - 1)
+					.getAgentState();
+			//heading = TrackerTools.getAngleToTarget(myState, agentState);
+			//System.out.println("Heading angle: " + heading);
+			targetState = agentState;
+		}
 
+		AgentState currentTargetState = targetState;
 		game.Action expectedAction1 = null;
 		expectedAction1 = targetPolicy.getAction(targetState);
 		// calculate probability of diverging according to past history
 		double[] divergentProbabilities = TrackerTools
 				.getDivergenceProbability(targetMotionHistory,
 						grid.encodeAction(expectedAction1));
+		targetState = expectedAction1.getResultingState();
+		
 		/*if (divergentProbabilities != null) {
 			// if there is a probability of diverging, calculate next state
 			// according to probability of divergence
@@ -213,20 +220,12 @@ public class Tracker implements Agent {
 		}
 		double heading = TrackerTools.getAngleToTarget(myState, targetState);
 		targetState = nextTargetState;
-		if (newPercepts.size() != 0) {
-			AgentState agentState = newPercepts.get(newPercepts.size() - 1)
-					.getAgentState();
-			heading = TrackerTools.getAngleToTarget(myState, agentState);
-			System.out.println("Heading angle: " + heading);
-			targetState = agentState;
-
-		}*/
-
+		*/
 		System.out.println(TrackerTools.utility(myState, targetState, targetSensingParams,
 				mySensingParams, obstacles));
 		
 		//return new TrackerAction(myState, heading, 1.0 / grid.getGridSize());
-		return TrackerTools.maximumUtility(1, targetPolicy, targetState, divergentProbabilities, myState, targetSensingParams, mySensingParams, obstacles);
+		return TrackerTools.maximumUtility(1, targetPolicy, currentTargetState, divergentProbabilities, myState, targetSensingParams, mySensingParams, obstacles);
 	}
 
 	public int getActionCode(double[] probability) {

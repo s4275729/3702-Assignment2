@@ -94,7 +94,8 @@ public class TrackerTools {
 				maxActionKey = key;
 			}
 			
-			System.out.println("Action " + key + " Utility: " + totalUtilityForEachTrackerMove);
+			if(totalUtilityForEachTrackerMove < 0)
+				System.out.println("NEGATIVE " + key + " Utility: " + totalUtilityForEachTrackerMove);
 		}
 		
 		System.out.println("Maximum utility: " + maxUtility + " Key: " + maxActionKey);
@@ -195,6 +196,22 @@ public class TrackerTools {
 		possibleActions.put(21, new TrackerAction(currentTrackerState, Math.toRadians(247.5), distance));
 		possibleActions.put(22, new TrackerAction(currentTrackerState, Math.toRadians(270), distance));
 		possibleActions.put(23, new TrackerAction(currentTrackerState, Math.toRadians(292.5), distance));
+		 
+		possibleActions.put(121, new TrackerAction(currentTrackerState, Math.toRadians(112.5), 0));
+		possibleActions.put(122, new TrackerAction(currentTrackerState, Math.toRadians(90), 0));
+		possibleActions.put(123, new TrackerAction(currentTrackerState, Math.toRadians(67.5), 0));
+		possibleActions.put(125, new TrackerAction(currentTrackerState, Math.toRadians(157.5), 0));
+		possibleActions.put(126, new TrackerAction(currentTrackerState, Math.toRadians(135), 0));
+		possibleActions.put(128, new TrackerAction(currentTrackerState, Math.toRadians(45), 0));
+		possibleActions.put(129, new TrackerAction(currentTrackerState, Math.toRadians(22.5), 0));
+		possibleActions.put(1210, new TrackerAction(currentTrackerState, Math.toRadians(180), 0));
+		possibleActions.put(1215, new TrackerAction(currentTrackerState, Math.toRadians(202.5), 0));
+		possibleActions.put(1216, new TrackerAction(currentTrackerState, Math.toRadians(225), 0));
+		possibleActions.put(1218, new TrackerAction(currentTrackerState, Math.toRadians(315), 0));
+		possibleActions.put(1219, new TrackerAction(currentTrackerState, Math.toRadians(337.5), 0));
+		possibleActions.put(1221, new TrackerAction(currentTrackerState, Math.toRadians(247.5), 0));
+		possibleActions.put(1222, new TrackerAction(currentTrackerState, Math.toRadians(270), 0));
+		possibleActions.put(1223, new TrackerAction(currentTrackerState, Math.toRadians(292.5), 0));
 		
 		return possibleActions;
 	}
