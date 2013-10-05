@@ -56,7 +56,7 @@ public class TrackerTools {
 	}
 	
 	public static double maxUtility(int depth, TargetPolicy targetPolicy,
-			AgentState targetState, double[] probs, AgentState trackerState,
+			AgentState targetState, MotionHistory targetMotionHistory, AgentState trackerState,
 			SensingParameters targetSense, SensingParameters trackerSense,
 			List<RectRegion> obstacles) {
 
@@ -76,6 +76,10 @@ public class TrackerTools {
 					trackerState, grid);
 			Set<Integer> actionSet = actions.keySet();
 
+			double[] probs = TrackerTools
+					.getTargetDivergenceProbability(targetMotionHistory,
+							grid.encodeAction(targetPolicy.getAction(targetState)), grid, targetState, obstacles);
+			
 			for (Integer key : actionSet) {
 				TrackerAction act = actions.get(key);
 				AgentState resultTrackerState = act.getResultingState();
@@ -95,7 +99,7 @@ public class TrackerTools {
 						// resulting target state
 						double utility = probs[i]
 								* (maxUtility(depth - 1, targetPolicy,
-										resultTargetState, probs,
+										resultTargetState, targetMotionHistory,
 										resultTrackerState, targetSense,
 										trackerSense, obstacles) + utility(
 										resultTrackerState, resultTargetState,
@@ -165,10 +169,12 @@ public class TrackerTools {
 	 * 
 	 * @param mh
 	 * @param desiredAction
+	 * @param targetState 
+	 * @param obstacles 
 	 * @return
 	 */
 	public static double[] getTargetDivergenceProbability(MotionHistory mh,
-			int desiredAction, TargetGrid grid) {
+			int desiredAction, TargetGrid grid, AgentState targetState, List<RectRegion> obstacles) {
 		List<HistoryEntry> history = mh.getHistory();
 		double[] probabilities = new double[9];
 
@@ -184,6 +190,25 @@ public class TrackerTools {
 		if (count != 0) {
 			for (int i = 0; i < probabilities.length; i++) {
 				probabilities[i] = probabilities[i] / count;
+				
+				if(probabilities[i] > 0)
+				{
+					GridCell nextCell = grid.decodeFromIndices(grid.getCell(targetState.getPosition()), i);
+					AgentState resultTargetState = new AgentState(grid.getCentre(nextCell), grid.getHeading(i));
+					
+					boolean canMove = GeomTools.canMove(
+							targetState.getPosition(),
+							resultTargetState.getPosition(),
+							targetState.hasCamera(),
+							targetState.getCameraArmLength(),
+							obstacles);
+					
+					if(!canMove)
+					{
+						probabilities[4] += probabilities[i];
+						probabilities[i] = 0;
+					}
+				}
 			}
 		} else {
 			return null;

@@ -209,16 +209,10 @@ public class Tracker implements Agent {
 		}
 
 		AgentState currentTargetState = targetState;
-		game.Action expectedAction1 = null;
-		expectedAction1 = targetPolicy.getAction(targetState);
-		// calculate probability of diverging according to past history
-		double[] divergentProbabilities = TrackerTools
-				.getTargetDivergenceProbability(targetMotionHistory,
-						grid.encodeAction(expectedAction1), grid);
-		targetState = expectedAction1.getResultingState();
+		targetState = targetPolicy.getAction(targetState).getResultingState();
 
 		TrackerTools.maxUtility(2, targetPolicy,
-				currentTargetState, divergentProbabilities, myState,
+				currentTargetState, targetMotionHistory, myState,
 				targetSensingParams, mySensingParams, obstacles);
 		
 		return TrackerTools.a;
