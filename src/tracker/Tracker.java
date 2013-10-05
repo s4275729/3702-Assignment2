@@ -113,6 +113,35 @@ public class Tracker implements Agent {
 		// TODO Write this method!
 
 		TargetGrid grid = targetPolicy.getGrid();
+
+		GridCell next = targetPolicy.getNextIndex(grid
+				.getCell(targetInitialStates.get(0).getPosition()));
+
+		GridCell current = grid.getCell(targetInitialStates.get(0)
+				.getPosition());/*
+								 * System.out.println(current);
+								 * System.out.println(next);
+								 * 
+								 * System.out.println("Tracker: " +
+								 * myInitialState.getPosition());
+								 * System.out.println("Target: " +
+								 * targetInitialStates.get(0).getPosition());
+								 * 
+								 * System.out.println("Distance to target: " +
+								 * TrackerTools
+								 * .getDistanceToTarget(myInitialState,
+								 * targetInitialStates.get(0)));
+								 * System.out.println("Tracker heading angle: "
+								 * + myInitialState.getHeading());
+								 * System.out.println("Target heading angle: " +
+								 * Math
+								 * .toDegrees(targetInitialStates.get(0).getHeading
+								 * ()));
+								 * 
+								 * System.out.println("Angle to target: " +
+								 * TrackerTools.getAngleToTarget(myInitialState,
+								 * targetInitialStates.get(0)));
+								 */
 		currentTarget = grid.getCell(targetInitialStates.get(0).getPosition());
 		targetState = targetInitialStates.get(0);
 
@@ -187,13 +216,7 @@ public class Tracker implements Agent {
 				.getTargetDivergenceProbability(targetMotionHistory,
 						grid.encodeAction(expectedAction1), grid);
 		targetState = expectedAction1.getResultingState();
-		
-		/*double[] trackerProbs = TrackerTools.getTrackerDivergenceProbability(myMotionHistory, 23, myState, grid, obstacles);
-		for(int i=0; i < trackerProbs.length; i++)
-		{
-			System.out.println("Desired action 23, result: " + i + " " + trackerProbs[i]);
-		}*/
-		
+
 		TrackerTools.maxUtility(2, targetPolicy,
 				currentTargetState, divergentProbabilities, myState,
 				targetSensingParams, mySensingParams, obstacles);

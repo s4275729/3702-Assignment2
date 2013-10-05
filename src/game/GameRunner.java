@@ -1088,21 +1088,22 @@ public class GameRunner {
 			return;
 		}
 		
+<<<<<<< HEAD
 		int numGames = 100;
+=======
+		int numGames = 1;
+>>>>>>> parent of 7606653... 100% win rate
 		//int numGames = 1;
 		int numWins = 0;
-		int numLoses = 0;
-		int numDraw = 0;
 		for (int i = 0; i < numGames; i++) {
 			int result = runner.runVerbose(outputFile, true);
 			runner.saveHistory();
 			if (result == 1) {
 				numWins += 1;
-			} else if (result == 0) numDraw +=1;
-			else if (result == -1) numLoses +=1;
+			}
 		}
-		System.out.println(String.format("Tracker won %d of %d games. Draws: %d Loses: %d",
-				numWins, numGames, numDraw, numLoses));
+		System.out.println(String.format("Tracker won %d of %d games.",
+				numWins, numGames));
 		/*
 		 * try { runner.getRuntimeTargetMotionHistory().writeToFile(
 		 * "targetMotionHistory.txt");

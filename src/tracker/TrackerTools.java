@@ -54,7 +54,72 @@ public class TrackerTools {
 
 		return reward;
 	}
+/*
+	public static TrackerAction maximumUtility(int depth,
+			TargetPolicy targetPolicy, AgentState currentTargetState,
+			double[] probs, AgentState trackerState,
+			SensingParameters targetSense, SensingParameters trackerSense,
+			List<RectRegion> obstacles) {
 
+		TargetGrid grid = targetPolicy.getGrid();
+
+		// choose the action with maximum utility (taking into account the next
+		// target step)
+
+		double maxUtility = 0.0;
+		Integer maxActionKey = 1;
+
+		AgentState currentDepthTrackerState = trackerState;
+		AgentState currentDepthTargetState = currentTargetState;
+		for (int d = 0; d < depth; d++) {
+			// get a list of possible actions
+			HashMap<Integer, TrackerAction> actions = getPossibleActions(
+					trackerState, grid);
+			Set<Integer> actionSet = actions.keySet();
+
+			for (Integer key : actionSet) {
+				TrackerAction act = actions.get(key);
+				AgentState resultTrackerState = act.getResultingState();
+
+				double totalUtilityForEachTrackerMove = 0;
+
+				// Iterate through the possible next states of the target
+				for (int i = 0; i < probs.length; i++) {
+					// If the target has a probability to do action i
+					if (probs[i] != 0) {
+						GridCell nextCell = grid.decodeFromIndices(
+								grid.getCell(currentTargetState.getPosition()),
+								i);
+						AgentState resultTargetState = new AgentState(
+								grid.getCentre(nextCell), i);
+
+						// Calculate the utility of the resulting tracker state
+						// and resulting target state
+						double utility = probs[i]
+								* utility(resultTrackerState,
+										resultTargetState, targetSense,
+										trackerSense, obstacles);
+
+						// Sum up all the utilities of each possible target
+						// states
+						totalUtilityForEachTrackerMove += utility;
+					}
+				}
+
+				if (totalUtilityForEachTrackerMove > maxUtility) {
+					maxUtility = totalUtilityForEachTrackerMove;
+					maxActionKey = key;
+				}
+
+			}
+			currentDepthTrackerState = actions.get(maxActionKey)
+					.getResultingState();
+			// return actions.get(maxActionKey);
+
+		}
+		return actions.get(maxActionKey);
+	}
+*/
 	public static double maxUtility(int depth, TargetPolicy targetPolicy,
 			AgentState targetState, double[] probs, AgentState trackerState,
 			SensingParameters targetSense, SensingParameters trackerSense,
@@ -91,8 +156,7 @@ public class TrackerTools {
 						AgentState resultTargetState = new AgentState(
 								grid.getCentre(nextCell), i);
 
-						// Calculate the utility of the resulting tracker state
-						// and
+						// Calculate the utility of the resulting tracker state and
 						// resulting target state
 						double utility = probs[i]
 								* (maxUtility(depth - 1, targetPolicy,
@@ -102,8 +166,7 @@ public class TrackerTools {
 										resultTrackerState, resultTargetState,
 										targetSense, trackerSense, obstacles));
 
-						// Sum up all the utilities of each possible target
-						// states
+						// Sum up all the utilities of each possible target states
 						totalUtilityForEachTrackerMove += utility;
 					}
 				}
@@ -114,7 +177,7 @@ public class TrackerTools {
 				}
 
 			}
-			a = actions.get(maxActionKey);
+			a =  actions.get(maxActionKey);
 			return maxUtility;
 		}
 		// choose the action with maximum utility (taking into account the next
