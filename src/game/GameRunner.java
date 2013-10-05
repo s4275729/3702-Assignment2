@@ -1088,7 +1088,7 @@ public class GameRunner {
 			return;
 		}
 		
-		int numGames = 10000;
+		int numGames = 100;
 		//int numGames = 1;
 		int numWins = 0;
 		int numLoses = 0;

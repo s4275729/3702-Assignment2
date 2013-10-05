@@ -46,7 +46,7 @@ public class Tracker implements Agent {
 	/** 
 	 * 
 	 */
-	private GridCell currentTarget;
+	private TrackerTools tk;
 	private AgentState targetState;
 
 	/**
@@ -110,12 +110,12 @@ public class Tracker implements Agent {
 	 * actually starts. If you don't require any setup, leave this method blank.
 	 */
 	public void initialise() {
-		// TODO Write this method!
 
-		TargetGrid grid = targetPolicy.getGrid();
-		currentTarget = grid.getCell(targetInitialStates.get(0).getPosition());
+		tk = new TrackerTools(targetPolicy, targetMotionHistory,
+				targetMotionHistory, targetPolicy, targetSensingParams,
+				mySensingParams, obstacles);
+
 		targetState = targetInitialStates.get(0);
-
 	}
 
 	@Override
@@ -180,18 +180,11 @@ public class Tracker implements Agent {
 		}
 
 		AgentState currentTargetState = targetState;
-		game.Action expectedAction1 = null;
-		expectedAction1 = targetPolicy.getAction(targetState);
-		// calculate probability of diverging according to past history
-		double[] divergentProbabilities = TrackerTools
-				.getDivergenceProbability(targetMotionHistory,
-						grid.encodeAction(expectedAction1));
-		targetState = expectedAction1.getResultingState();
+		game.Action expectedAction = targetPolicy.getAction(targetState);
+		targetState = expectedAction.getResultingState();
 
-		TrackerTools.maxUtility(2, targetPolicy,
-				currentTargetState, divergentProbabilities, myState,
-				targetSensingParams, mySensingParams, obstacles);
-		
+		tk.maxUtility(2, currentTargetState,myState);
+
 		return TrackerTools.a;
 	}
 

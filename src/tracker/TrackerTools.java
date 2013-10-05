@@ -20,6 +20,25 @@ import divergence.MotionHistory.HistoryEntry;
 public class TrackerTools {
 
 	public static TrackerAction a;
+	public static int PLANNING_HORIZON = 3;
+
+	private TargetPolicy targetPolicy;
+	private MotionHistory targetMotionHistory;
+	private MotionHistory trackerMotionHistory;
+	private SensingParameters targetSense;
+	public SensingParameters trackerSense;
+	private List<RectRegion> obstacles;
+
+	public TrackerTools(TargetPolicy tp, MotionHistory tmh, MotionHistory trmh,
+			TargetPolicy targetPolicy, SensingParameters ts,
+			SensingParameters trs, List<RectRegion> obs) {
+		this.targetMotionHistory = tmh;
+		this.trackerMotionHistory = trmh;
+		this.trackerSense = trs;
+		this.obstacles = obs;
+		this.targetPolicy = tp;
+		this.targetSense = ts;
+	}
 
 	/**
 	 * Utility/reward function
@@ -31,9 +50,7 @@ public class TrackerTools {
 	 * @param obstacles
 	 * @return
 	 */
-	public static double utility(AgentState trackerState,
-			AgentState targetState, SensingParameters targetSense,
-			SensingParameters trackerSense, List<RectRegion> obstacles) {
+	public double utility(AgentState trackerState, AgentState targetState) {
 		// System.out.println(trackerSense.getAngle());
 		double reward = 0;
 		if (GeomTools.canSee(trackerState, targetState, trackerSense,
@@ -50,17 +67,59 @@ public class TrackerTools {
 
 		return reward;
 	}
+	
+	/**
+	 * sum of utility of target states given the motion history and the tracker state
+	 * @return
+	 */
+	public double utilityTarget(AgentState trackerState, AgentState intendedTargetState) {
+		
+		
+		return 0;
+	}
+	/**
+	 *
+	 * @param numberOfTimes
+	 * @param targetPolicy
+	 * @param targetState
+	 * @param targetMotionHistory
+	 * @param trackerState
+	 * @param targetSense
+	 * @param trackerSense
+	 * @param obstacles
+	 */
 
-	public static double maxUtility(int depth, TargetPolicy targetPolicy,
-			AgentState targetState, double[] probs, AgentState trackerState,
-			SensingParameters targetSense, SensingParameters trackerSense,
-			List<RectRegion> obstacles) {
+	public void rolloutPlanning(int numberOfTimes, AgentState targetState, AgentState trackerState) {
+		MDPState root = new MDPState(targetState, trackerState);
+		
+		for (int i = 0; i < numberOfTimes; i++) {
+			generateATrace(0, root);
+		}
+	}
+
+	public double generateATrace(int planningHorizon, MDPState currentState) {
+		if (planningHorizon > PLANNING_HORIZON)
+			return 0;
+		
+			//determined by the action you take
+			MDPState nextState = new MDPState(null, null);
+			return generateATrace(planningHorizon + 1, nextState) + utility(currentState.getTargetState(), currentState.getTrackerState());
+
+		// select an action
+
+		// Sample a next state s according to T(s, a, s)."
+
+		// Q(s, a) = R(s, a) + GenerateATrace(s);
+
+	}
+
+	public double maxUtility(int depth, AgentState targetState,
+			AgentState trackerState) {
 
 		TargetGrid grid = targetPolicy.getGrid();
 
 		if (depth == 0) {
-			return utility(trackerState, targetState, targetSense,
-					trackerSense, obstacles);
+			return utility(trackerState, targetState);
 		}
 
 		else {
@@ -71,6 +130,11 @@ public class TrackerTools {
 			HashMap<Integer, TrackerAction> actions = getPossibleActions(
 					trackerState, grid);
 			Set<Integer> actionSet = actions.keySet();
+
+			game.Action expectedAction = targetPolicy.getAction(targetState);
+			// calculate probability of diverging according to past history
+			double[] probs = TrackerTools.getDivergenceProbability(
+					targetMotionHistory, grid.encodeAction(expectedAction));
 
 			for (Integer key : actionSet) {
 				TrackerAction act = actions.get(key);
@@ -91,12 +155,9 @@ public class TrackerTools {
 						// and
 						// resulting target state
 						double utility = probs[i]
-								* (maxUtility(depth - 1, targetPolicy,
-										resultTargetState, probs,
-										resultTrackerState, targetSense,
-										trackerSense, obstacles) + utility(
-										resultTrackerState, resultTargetState, targetSense,
-										trackerSense, obstacles));
+								* (maxUtility(depth - 1, resultTargetState,
+										resultTrackerState) + utility(
+										resultTrackerState, resultTargetState));
 
 						// Sum up all the utilities of each possible target
 						// states
