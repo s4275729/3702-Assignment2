@@ -111,9 +111,6 @@ public class Tracker implements Agent {
 	 */
 	public void initialise() {
 		// TODO Write this method!
-
-		TargetGrid grid = targetPolicy.getGrid();
-		currentTarget = grid.getCell(targetInitialStates.get(0).getPosition());
 		targetState = targetInitialStates.get(0);
 
 	}
@@ -165,11 +162,7 @@ public class Tracker implements Agent {
 	public TrackerAction getAction(int turnNo, ActionResult previousResult,
 			double[] scores, List<Percept> newPercepts) {
 		AgentState myState = previousResult.getResultingState();
-
-		// TODO Write this method!
 		TargetGrid grid = targetPolicy.getGrid();
-
-		// get expected action from policy
 
 		if (newPercepts.size() != 0) {
 			AgentState agentState = newPercepts.get(newPercepts.size() - 1)
@@ -180,26 +173,21 @@ public class Tracker implements Agent {
 		}
 
 		AgentState currentTargetState = targetState;
-		game.Action expectedAction1 = null;
-		expectedAction1 = targetPolicy.getAction(targetState);
-		// calculate probability of diverging according to past history
-		double[] targetProbs = TrackerTools
-				.getTargetDivergenceProbability(targetMotionHistory,
-						grid.encodeAction(expectedAction1), grid, currentTargetState, obstacles);
-		targetState = expectedAction1.getResultingState();
+		targetState = targetPolicy.getAction(targetState).getResultingState();
+
+		/* grade 5
+		TrackerTools.maxUtility(2, targetPolicy, currentTargetState,
+				targetMotionHistory, myState, targetSensingParams,
+				mySensingParams, obstacles, goalRegion);
+
+		return TrackerTools.a;*/
 		
-		/*double[] trackerProbs = TrackerTools.getTrackerDivergenceProbability(myMotionHistory, 23, myState, grid, obstacles);*/
-		/*for(int i=0; i < targetProbs.length; i++)
-		{
-			System.out.println("Desired action " + grid.encodeAction(expectedAction1) + ", result: " + i + " " + targetProbs[i]);
-		}
-		System.out.println();*/
+		//grade 6
+		return TrackerTools.rolloutPlanning(100, currentTargetState,
+				myState, targetPolicy, targetMotionHistory, myMotionHistory,
+				mySensingParams, mySensingParams, obstacles, goalRegion);
+
 		
-		TrackerTools.maxUtility(2, targetPolicy,
-				currentTargetState, targetProbs, myState,
-				targetSensingParams, mySensingParams, obstacles);
-		
-		return TrackerTools.a;
 	}
 
 	public int getActionCode(double[] probability) {
