@@ -8,6 +8,7 @@ import geom.GeomTools;
 import geom.GridCell;
 import geom.TargetGrid;
 
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.HashMap;
 import java.util.List;
@@ -194,14 +195,16 @@ public class TrackerTools {
 					GridCell nextCell = grid.decodeFromIndices(grid.getCell(targetState.getPosition()), i);
 					AgentState resultTargetState = new AgentState(grid.getCentre(nextCell), grid.getHeading(i));
 					
-					boolean canMove = GeomTools.canMove(
+					boolean collideObstacles = GeomTools.canMove(
 							targetState.getPosition(),
 							resultTargetState.getPosition(),
 							targetState.hasCamera(),
 							targetState.getCameraArmLength(),
 							obstacles);
 					
-					if(!canMove)
+					boolean outOfBounds = resultTargetState.getPosition().getX() < 0 || resultTargetState.getPosition().getY() < 0;
+					
+					if(!collideObstacles || outOfBounds)
 					{
 						probabilities[4] += probabilities[i];
 						probabilities[i] = 0;
@@ -246,7 +249,9 @@ public class TrackerTools {
 							trackerState.hasCamera(),
 							trackerState.getCameraArmLength(), obstacles);
 					
-					if(!canMove)
+					boolean outOfBounds = nextTrackerState.getPosition().getX() < 0 || nextTrackerState.getPosition().getY() < 0;
+					
+					if(!canMove || outOfBounds)
 					{
 						probabilities[12] += probabilities[i];
 						probabilities[i] = 0;
@@ -431,4 +436,6 @@ public class TrackerTools {
 
 		return possibleActions;
 	}
+	
+	
 }
