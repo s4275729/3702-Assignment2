@@ -48,16 +48,15 @@ public class MDPState {
 		rewardActions.put(action, value);
 	}
 
-	public void setValueAction(int action) {
+	public void updateValue(int action) {
 		double value = 0;
 		value += rewardActions.get(action);
-
 		double childValue = 0;
 		// += children * probability
 		for (int i = 0; i < children.size(); i++) {
 			if (children.get(i).getParentActionCode() == action) {
 				childValue += children.get(i).getProbability()
-						* children.get(i).getValue();
+						* children.get(i).getMaxValue();
 			}
 		}
 		childValue *= Math.pow(0.95, depth);
@@ -66,14 +65,11 @@ public class MDPState {
 		valueActions.put(action, value);
 	}
 
-	public double getValue() {
+	public double getMaxValue() {
 		// return max of actions keys
 		Double value = Double.MIN_VALUE;
 		for (Entry<Integer, Double> entry : valueActions.entrySet()) {
 			double comparisonValue = entry.getValue();
-					/*+ Math.sqrt(((2 * Math.log(visited)) / actionsPerformed
-							.get(entry.getKey())));*/
-			
 			if (comparisonValue > value) {
 				value = entry.getValue();
 			}
@@ -89,9 +85,6 @@ public class MDPState {
 		int actionKey = 0;
 		for (Entry<Integer, Double> entry : valueActions.entrySet()) {
 			double comparisonValue = entry.getValue();
-				/*	+ Math.sqrt(((2 * Math.log(visited)) / actionsPerformed
-							.get(entry.getKey())));*/
-
 			if (comparisonValue > value) {
 				value = entry.getValue();
 				actionKey = entry.getKey();

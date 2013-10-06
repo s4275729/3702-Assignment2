@@ -43,10 +43,6 @@ public class Tracker implements Agent {
 	/** The goal region. */
 	private RectRegion goalRegion;
 
-	/** 
-	 * 
-	 */
-	private GridCell currentTarget;
 	private AgentState targetState;
 
 	/**
@@ -163,6 +159,7 @@ public class Tracker implements Agent {
 			double[] scores, List<Percept> newPercepts) {
 		AgentState myState = previousResult.getResultingState();
 		TargetGrid grid = targetPolicy.getGrid();
+		long startTime = System.currentTimeMillis();
 
 		if (newPercepts.size() != 0) {
 			AgentState agentState = newPercepts.get(newPercepts.size() - 1)
@@ -181,11 +178,11 @@ public class Tracker implements Agent {
 
 		// grade 6
 		
-		TrackerAction ta = TrackerTools.rolloutPlanning(10000,
+		TrackerAction ta = TrackerTools.rolloutPlanning(30000,
 				currentTargetState, myState, targetPolicy, targetMotionHistory,
 				myMotionHistory, mySensingParams, mySensingParams, obstacles,
 				goalRegion);		
-		
+		System.out.println("Action decided. Time elapsed: " + (System.currentTimeMillis() - startTime)/1000 + "seconds");
 		
 		return ta;
 		// System.out.print(ta);
