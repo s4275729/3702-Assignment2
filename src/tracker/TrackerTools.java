@@ -8,6 +8,7 @@ import geom.GeomTools;
 import geom.GridCell;
 import geom.TargetGrid;
 
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.HashMap;
 import java.util.List;
@@ -339,38 +340,37 @@ public class TrackerTools {
 			int desiredAction, TargetGrid grid, AgentState targetState,
 			List<RectRegion> obstacles) {
 		List<HistoryEntry> history = mh.getHistory();
-		double[] actionCount = new double[9];
+		double[] resultActionCount = new double[9];
 		
 
 		int count = 0;
 		for (HistoryEntry entry : history) {
 			if (entry.getDesiredActionCode() == desiredAction) {
 				int resultAction = entry.getResultCode();
-				actionCount[resultAction]++;
+				resultActionCount[resultAction]++;
 				count++;
 			}
 		}
 		
 		double[] probabilities = new double[9];
 		if (count != 0) {
-			for (int i = 0; i < actionCount.length; i++) {
-				probabilities[i] += actionCount[i] / count;
-
-				if (probabilities[i] > 0) {
-					GridCell nextCell = grid.decodeFromIndices(
-							grid.getCell(targetState.getPosition()), i);
-					AgentState resultTargetState = new AgentState(
-							grid.getCentre(nextCell), grid.getHeading(i));
-
+			for (int i = 0; i < resultActionCount.length; i++) {
+				probabilities[i] += resultActionCount[i] / count;
+				
+				if(probabilities[i] > 0)
+				{
+					GridCell nextCell = grid.decodeFromIndices(grid.getCell(targetState.getPosition()), i);
+					AgentState resultTargetState = new AgentState(grid.getCentre(nextCell), grid.getHeading(i));
+					
 					boolean hitObstacles = !GeomTools.canMove(
 							targetState.getPosition(),
 							resultTargetState.getPosition(),
 							targetState.hasCamera(),
-							targetState.getCameraArmLength(), obstacles);
+							targetState.getCameraArmLength(),
+							obstacles);
 					
-					boolean outOfBounds = 	resultTargetState.getPosition().getX() < 0 || 
-											resultTargetState.getPosition().getY() < 0;	
-
+					boolean outOfBounds = resultTargetState.getPosition().getX() < 0 || resultTargetState.getPosition().getY() < 0;
+					
 					if (outOfBounds || hitObstacles) {
 						probabilities[4] += probabilities[i];
 						probabilities[i] = 0;
@@ -419,8 +419,9 @@ public class TrackerTools {
 											nextTrackerState.getPosition().getY() < 0;	
 
 					if (outOfBounds || hitObstacles) {
-						probabilities[12] += probabilities[i];
-						probabilities[i] = 0;
+
+							probabilities[12] += probabilities[i];
+							probabilities[i] = 0;
 					}
 				}
 			}
@@ -603,4 +604,6 @@ public class TrackerTools {
 
 		return possibleActions;
 	}
+	
+	
 }

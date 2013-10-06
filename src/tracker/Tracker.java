@@ -180,38 +180,16 @@ public class Tracker implements Agent {
 				mySensingParams, obstacles, goalRegion);
 
 		// grade 6
+		/*
 		TrackerAction ta = TrackerTools.rolloutPlanning(20000,
 				currentTargetState, myState, targetPolicy, targetMotionHistory,
 				myMotionHistory, mySensingParams, mySensingParams, obstacles,
 				goalRegion);		
+		*/
 		
-		
-		return ta;
+		//return ta;
 		// System.out.print(ta);
-		// return TrackerTools.a;
+		return TrackerTools.a;
 
-	}
-
-	public int getActionCode(double[] probability) {
-		int action = -1;
-		double sum = 0;
-		Random r = new Random();
-		double random = r.nextDouble();
-		for (int i = 0; i < 9; i++) {
-
-			if (probability[i] == 0)
-				continue;
-			if (random >= sum && random < sum + probability[i]) {
-				action = i;
-				break;
-
-			}
-			sum = sum + probability[i];
-		}
-
-		if (action == -1) {
-			// System.out.println(probability[0]);
-		}
-		return action;
 	}
 }
