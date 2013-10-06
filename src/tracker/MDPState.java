@@ -3,38 +3,83 @@ package tracker;
 import game.AgentState;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
+
+import divergence.MotionHistory;
 
 public class MDPState {
 	private AgentState targetState;
 	private AgentState trackerState;
-	private double value = 0;
 	private boolean isChanged = true;
 	private int parentActionCode = -1;
+	private double probability = 1;
 	private double reward = 0;
 	List<MDPState> children;
-	
+	HashMap<Integer, Double> rewardActions;
+	HashMap<Integer, Double> valueActions;
+
+	private int visited = 0;
+	HashMap<Integer, Integer> actionsPerformed;
+
 	public MDPState(AgentState targetState, AgentState trackerState) {
 		this.setTargetState(targetState);
 		this.setTrackerState(trackerState);
 		children = new ArrayList<MDPState>();
+		rewardActions = new HashMap<Integer, Double>();
+		valueActions = new HashMap<Integer, Double>();
+		actionsPerformed = new HashMap<Integer, Integer>();
 	}
 
+	public void setRewardAction(int action, double value) {
+		rewardActions.put(action, value);
+	}
 
-	/**
-	 * @return the value
-	 */
+	public void setValueAction(int action) {
+		double value = 0;
+		value += rewardActions.get(action);
+
+		// += children * probability
+		for (int i = 0; i < children.size(); i++) {
+			if (children.get(i).getParentActionCode() == action) {
+				value += children.get(i).getProbability()
+						* children.get(i).getValue();
+			}
+		}
+		valueActions.put(action, value);
+	}
+
 	public double getValue() {
+		// return max of actions keys
+		Double value = -1.0;
+		for (Entry<Integer, Double> entry : valueActions.entrySet()) {
+			double comparisonValue = entry.getValue()
+					+ Math.sqrt(((2 * Math.log10(visited)) / actionsPerformed.get(entry
+							.getKey())));
+			if (comparisonValue > value) {
+				value = entry.getValue();
+			}
+		}
 		return value;
 	}
 
-	/**
-	 * @param value the value to set
-	 */
-	public void setValue(double value) {
-		this.value = value;
+	public int getAction() {
+		// get action that returns highest value
+		// return max of actions keys
+		Double value = -1.0;
+		int actionKey = 0;
+		for (Entry<Integer, Double> entry : valueActions.entrySet()) {
+			double comparisonValue = entry.getValue()
+					+ Math.sqrt(((2 * Math.log10(visited)) / actionsPerformed.get(entry
+							.getKey())));
+			if (comparisonValue > value) {
+				value = entry.getValue();
+				actionKey = entry.getKey();
+			}
+		}
+		return actionKey;
 	}
-
 
 	/**
 	 * @return the targetState
@@ -43,14 +88,13 @@ public class MDPState {
 		return targetState;
 	}
 
-
 	/**
-	 * @param targetState the targetState to set
+	 * @param targetState
+	 *            the targetState to set
 	 */
 	public void setTargetState(AgentState targetState) {
 		this.targetState = targetState;
 	}
-
 
 	/**
 	 * @return the trackerState
@@ -59,22 +103,25 @@ public class MDPState {
 		return trackerState;
 	}
 
-
 	/**
-	 * @param trackerState the trackerState to set
+	 * @param trackerState
+	 *            the trackerState to set
 	 */
 	public void setTrackerState(AgentState trackerState) {
 		this.trackerState = trackerState;
 	}
-	
+
 	public void addChild(MDPState child) {
 		children.add(child);
 	}
-	
+
 	public boolean childExists(MDPState child) {
-		for (int i = 0; i < children.size(); i++ ) {
-			if (children.get(i).getTargetState() == child.getTargetState() &&
-					children.get(i).getTrackerState() == child.getTrackerState()) {
+		for (int i = 0; i < children.size(); i++) {
+			if (children.get(i).getTargetState() == child.getTargetState()
+					&& children.get(i).getTrackerState() == child
+							.getTrackerState()
+					&& children.get(i).getParentActionCode() == child
+							.getParentActionCode()) {
 				return true;
 			}
 		}
@@ -82,14 +129,16 @@ public class MDPState {
 	}
 
 	public MDPState getChild(MDPState child) {
-		for (int i = 0; i < children.size(); i++ ) {
-			if (children.get(i).getTargetState() == child.getTargetState() &&
-					children.get(i).getTrackerState() == child.getTrackerState()) {
+		for (int i = 0; i < children.size(); i++) {
+			if (children.get(i).getTargetState() == child.getTargetState()
+					&& children.get(i).getTrackerState() == child
+							.getTrackerState()) {
 				return children.get(i);
 			}
 		}
 		return null;
 	}
+
 	/**
 	 * @return the parentActionCode
 	 */
@@ -97,14 +146,13 @@ public class MDPState {
 		return parentActionCode;
 	}
 
-
 	/**
-	 * @param parentActionCode the parentActionCode to set
+	 * @param parentActionCode
+	 *            the parentActionCode to set
 	 */
 	public void setParentActionCode(int parentActionCode) {
 		this.parentActionCode = parentActionCode;
 	}
-
 
 	/**
 	 * @return the isChanged
@@ -113,14 +161,13 @@ public class MDPState {
 		return isChanged;
 	}
 
-
 	/**
-	 * @param isChanged the isChanged to set
+	 * @param isChanged
+	 *            the isChanged to set
 	 */
 	public void setChanged(boolean isChanged) {
 		this.isChanged = isChanged;
 	}
-
 
 	/**
 	 * @return the reward
@@ -129,13 +176,42 @@ public class MDPState {
 		return reward;
 	}
 
-
 	/**
-	 * @param reward the reward to set
+	 * @param reward
+	 *            the reward to set
 	 */
 	public void setReward(double reward) {
 		this.reward = reward;
 	}
 
-	
+	/**
+	 * @return the probability
+	 */
+	public double getProbability() {
+		return probability;
+	}
+
+	/**
+	 * @param probability
+	 *            the probability to set
+	 */
+	public void setProbability(double probability) {
+		this.probability = probability;
+	}
+
+	/**
+	 * @return the visited
+	 */
+	public int getVisited() {
+		return visited;
+	}
+
+	/**
+	 * @param visited
+	 *            the visited to set
+	 */
+	public void setVisited(int visited) {
+		this.visited = visited;
+	}
+
 }

@@ -162,6 +162,7 @@ public class Tracker implements Agent {
 	public TrackerAction getAction(int turnNo, ActionResult previousResult,
 			double[] scores, List<Percept> newPercepts) {
 		AgentState myState = previousResult.getResultingState();
+		TargetGrid grid = targetPolicy.getGrid();
 
 		if (newPercepts.size() != 0) {
 			AgentState agentState = newPercepts.get(newPercepts.size() - 1)
@@ -174,14 +175,19 @@ public class Tracker implements Agent {
 		AgentState currentTargetState = targetState;
 		targetState = targetPolicy.getAction(targetState).getResultingState();
 
+		/* grade 5
 		TrackerTools.maxUtility(2, targetPolicy, currentTargetState,
 				targetMotionHistory, myState, targetSensingParams,
-				mySensingParams, obstacles);
+				mySensingParams, obstacles, goalRegion);
 
-		TrackerTools.rolloutPlanning(5, currentTargetState, myState,
-				targetPolicy, targetMotionHistory, myMotionHistory,
-				mySensingParams, mySensingParams, obstacles);
-		return TrackerTools.a;
+		return TrackerTools.a;*/
+		
+		//grade 6
+		return TrackerTools.rolloutPlanning(100, currentTargetState,
+				myState, targetPolicy, targetMotionHistory, myMotionHistory,
+				mySensingParams, mySensingParams, obstacles, goalRegion);
+
+		
 	}
 
 	public int getActionCode(double[] probability) {
