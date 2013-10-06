@@ -24,6 +24,7 @@ public class TrackerTools {
 			202.5, 225, 315, 337.5, 247.5, 270, 292.5 };
 	final int[] keys = { 1, 2, 3, 5, 6, 8, 9, 10, 14, 15, 16, 18, 19, 21, 22,
 			23 };
+	private static int PLANNING_HORIZON = 3;
 
 	/**
 	 * Utility/reward function
@@ -54,11 +55,105 @@ public class TrackerTools {
 
 		return reward;
 	}
-	
+
+	public static void rolloutPlanning(int numberOfTimes, AgentState targetState,
+			AgentState trackerState,
+			TargetPolicy targetPolicy, MotionHistory targetMotionHistory,
+			MotionHistory trackerMotionHistory, SensingParameters targetSense,
+			SensingParameters trackerSense, List<RectRegion> obstacles) {
+		MDPState root = new MDPState(targetState, trackerState);
+
+		for (int i = 0; i < numberOfTimes; i++) {
+			System.out.println(generateATrace(0, root, targetPolicy, targetMotionHistory,
+					trackerMotionHistory, trackerSense, trackerSense, obstacles));
+		}
+	}
+
+	public static double generateATrace(int planningHorizon, MDPState currentState,
+			TargetPolicy targetPolicy, MotionHistory targetMotionHistory,
+			MotionHistory trackerMotionHistory, SensingParameters targetSense,
+			SensingParameters trackerSense, List<RectRegion> obstacles) {
+		if (planningHorizon > PLANNING_HORIZON)
+			return 0;
+
+		// select an action
+		int action = 4; // randomly select an action
+		//apply transition
+		double p = 0.6;
+		// sample a next state according to T(s,a,s')
+		AgentState nextTrackerState = 
+				getNextTrackerState(currentState.getTrackerState(), action,
+						targetPolicy.getGrid());
+		MDPState nextState = new MDPState(nextTrackerState, targetPolicy.getAction(
+				currentState.getTargetState()).getResultingState());
+		// add s' as a child
+		if (!currentState.childExists(nextState)) {
+			currentState.addChild(nextState);
+			nextState.setParentActionCode(action);
+		} else {
+			nextState = currentState.getChild(nextState);
+		}
+		if (currentState.getValue() == 0) {
+			// not yet initialised
+			currentState.setReward(targetUtility(targetMotionHistory,
+					currentState.getTargetState(),
+					currentState.getTrackerState(), targetPolicy, trackerSense,
+					trackerSense, obstacles));
+		}
+		currentState.setValue(p* generateATrace(planningHorizon + 1, nextState,
+				targetPolicy, targetMotionHistory, trackerMotionHistory,
+				targetSense, trackerSense, obstacles)
+				+ currentState.getReward());
+		return currentState.getValue();
+
+		/*
+		 * Select an action a"
+		 * " Sample a next state s' according to T(s, a, s')." " " Add s' as a
+		 * child of s, via an edge labeled a."
+		 * " Q(s, a) = R(s, a) + GenerateATrace(s'); " " " Update Q(s, a) ; N(s)
+		 * = N(s)+1 ; N(s, a) = N(s, a)+1.
+		 */
+		// select an action
+
+		// Sample a next state s according to T(s, a, s)."
+
+		// Q(s, a) = R(s, a) + GenerateATrace(s);
+
+	}
+
+	public static double targetUtility(MotionHistory targetMotionHistory,
+			AgentState targetState, AgentState trackerState,
+			TargetPolicy targetPolicy, SensingParameters targetSense,
+			SensingParameters trackerSense, List<RectRegion> obstacles) {
+		game.Action expectedAction = targetPolicy.getAction(targetState);
+		TargetGrid grid = targetPolicy.getGrid();
+		double[] probs = getTargetDivergenceProbability(targetMotionHistory,
+				grid.encodeAction(expectedAction), grid, targetState, obstacles);
+
+		double sum = 0;
+		for (int i = 0; i < 9; i++) {
+			if (probs[i] != 0) {
+				GridCell nextCell = grid.decodeFromIndices(
+						grid.getCell(targetState.getPosition()), i);
+				AgentState resultTargetState = new AgentState(
+						grid.getCentre(nextCell), i);
+
+				// Calculate the utility of the resulting tracker state
+				// and
+				// resulting target state
+				double utility = probs[i]
+						* utility(trackerState, resultTargetState, targetSense,
+								trackerSense, obstacles);
+				sum += utility;
+			}
+		}
+		return sum;
+	}
+
 	public static double maxUtility(int depth, TargetPolicy targetPolicy,
-			AgentState targetState, MotionHistory targetMotionHistory, AgentState trackerState,
-			SensingParameters targetSense, SensingParameters trackerSense,
-			List<RectRegion> obstacles) {
+			AgentState targetState, MotionHistory targetMotionHistory,
+			AgentState trackerState, SensingParameters targetSense,
+			SensingParameters trackerSense, List<RectRegion> obstacles) {
 
 		TargetGrid grid = targetPolicy.getGrid();
 
@@ -76,10 +171,11 @@ public class TrackerTools {
 					trackerState, grid);
 			Set<Integer> actionSet = actions.keySet();
 
-			double[] probs = TrackerTools
-					.getTargetDivergenceProbability(targetMotionHistory,
-							grid.encodeAction(targetPolicy.getAction(targetState)), grid, targetState, obstacles);
-			
+			double[] probs = TrackerTools.getTargetDivergenceProbability(
+					targetMotionHistory,
+					grid.encodeAction(targetPolicy.getAction(targetState)),
+					grid, targetState, obstacles);
+
 			for (Integer key : actionSet) {
 				TrackerAction act = actions.get(key);
 				AgentState resultTrackerState = act.getResultingState();
@@ -95,7 +191,8 @@ public class TrackerTools {
 						AgentState resultTargetState = new AgentState(
 								grid.getCentre(nextCell), i);
 
-						// Calculate the utility of the resulting tracker state and
+						// Calculate the utility of the resulting tracker state
+						// and
 						// resulting target state
 						double utility = probs[i]
 								* (maxUtility(depth - 1, targetPolicy,
@@ -105,7 +202,8 @@ public class TrackerTools {
 										resultTrackerState, resultTargetState,
 										targetSense, trackerSense, obstacles));
 
-						// Sum up all the utilities of each possible target states
+						// Sum up all the utilities of each possible target
+						// states
 						totalUtilityForEachTrackerMove += utility;
 					}
 				}
@@ -116,12 +214,9 @@ public class TrackerTools {
 				}
 
 			}
-			a =  actions.get(maxActionKey);
+			a = actions.get(maxActionKey);
 			return maxUtility;
 		}
-		// choose the action with maximum utility (taking into account the next
-		// target step)
-
 	}
 
 	/**
@@ -169,12 +264,13 @@ public class TrackerTools {
 	 * 
 	 * @param mh
 	 * @param desiredAction
-	 * @param targetState 
-	 * @param obstacles 
+	 * @param targetState
+	 * @param obstacles
 	 * @return
 	 */
 	public static double[] getTargetDivergenceProbability(MotionHistory mh,
-			int desiredAction, TargetGrid grid, AgentState targetState, List<RectRegion> obstacles) {
+			int desiredAction, TargetGrid grid, AgentState targetState,
+			List<RectRegion> obstacles) {
 		List<HistoryEntry> history = mh.getHistory();
 		double[] probabilities = new double[9];
 
@@ -190,21 +286,20 @@ public class TrackerTools {
 		if (count != 0) {
 			for (int i = 0; i < probabilities.length; i++) {
 				probabilities[i] = probabilities[i] / count;
-				
-				if(probabilities[i] > 0)
-				{
-					GridCell nextCell = grid.decodeFromIndices(grid.getCell(targetState.getPosition()), i);
-					AgentState resultTargetState = new AgentState(grid.getCentre(nextCell), grid.getHeading(i));
-					
+
+				if (probabilities[i] > 0) {
+					GridCell nextCell = grid.decodeFromIndices(
+							grid.getCell(targetState.getPosition()), i);
+					AgentState resultTargetState = new AgentState(
+							grid.getCentre(nextCell), grid.getHeading(i));
+
 					boolean canMove = GeomTools.canMove(
 							targetState.getPosition(),
 							resultTargetState.getPosition(),
 							targetState.hasCamera(),
-							targetState.getCameraArmLength(),
-							obstacles);
-					
-					if(!canMove)
-					{
+							targetState.getCameraArmLength(), obstacles);
+
+					if (!canMove) {
 						probabilities[4] += probabilities[i];
 						probabilities[i] = 0;
 					}
@@ -245,9 +340,8 @@ public class TrackerTools {
 							nextTrackerState.getPosition(),
 							trackerState.hasCamera(),
 							trackerState.getCameraArmLength(), obstacles);
-					
-					if(!canMove)
-					{
+
+					if (!canMove) {
 						probabilities[12] += probabilities[i];
 						probabilities[i] = 0;
 					}
@@ -375,7 +469,8 @@ public class TrackerTools {
 						.normaliseAngle(Math.toRadians(22.5)), distance));
 		possibleActions.put(10, new TrackerAction(currentTrackerState,
 				GeomTools.normaliseAngle(Math.toRadians(180)), distance));
-		possibleActions.put(12, new TrackerAction(currentTrackerState, currentTrackerState.getHeading(), 0));
+		possibleActions.put(12, new TrackerAction(currentTrackerState,
+				currentTrackerState.getHeading(), 0));
 		possibleActions.put(14, new TrackerAction(currentTrackerState,
 				GeomTools.normaliseAngle(Math.toRadians(0)), distance));
 		possibleActions.put(15, new TrackerAction(currentTrackerState,

@@ -1088,11 +1088,7 @@ public class GameRunner {
 			return;
 		}
 		
-<<<<<<< HEAD
 		int numGames = 100;
-=======
-		int numGames = 1;
->>>>>>> parent of 7606653... 100% win rate
 		//int numGames = 1;
 		int numWins = 0;
 		for (int i = 0; i < numGames; i++) {
