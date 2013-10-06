@@ -16,6 +16,7 @@ public class MDPState {
 	private int parentActionCode = -1;
 	private double probability = 1;
 	private double reward = 0;
+	private int depth;
 	List<MDPState> children;
 	HashMap<Integer, Double> rewardActions;
 	HashMap<Integer, Double> valueActions;
@@ -33,14 +34,16 @@ public class MDPState {
 	}
 
 	public String toString() {
-		String tostring = "tracker: " + this.trackerState + " target: " + this.targetState + "\n";
-		
-		for (int i = 0; i < children.size(); i ++) {
-			tostring+="child" + children.get(i).toString();
+		String tostring = "tracker: " + this.trackerState + " target: "
+				+ this.targetState + "\n";
+
+		for (int i = 0; i < children.size(); i++) {
+			tostring += "child" + children.get(i).toString();
 		}
 		return tostring;
-		
+
 	}
+
 	public void setRewardAction(int action, double value) {
 		rewardActions.put(action, value);
 	}
@@ -49,14 +52,17 @@ public class MDPState {
 		double value = 0;
 		value += rewardActions.get(action);
 
+		double childValue = 0;
 		// += children * probability
 		for (int i = 0; i < children.size(); i++) {
 			if (children.get(i).getParentActionCode() == action) {
-				double childValue =  children.get(i).getProbability()
+				childValue += children.get(i).getProbability()
 						* children.get(i).getValue();
-				value += childValue;
 			}
 		}
+		childValue *= Math.pow(0.95, depth);
+		value += childValue;
+		
 		valueActions.put(action, value);
 	}
 
@@ -64,13 +70,14 @@ public class MDPState {
 		// return max of actions keys
 		Double value = Double.MIN_VALUE;
 		for (Entry<Integer, Double> entry : valueActions.entrySet()) {
-			double comparisonValue = entry.getValue()
-					+ Math.sqrt(((2 * Math.log(visited)) / actionsPerformed.get(entry
-							.getKey())));
+			double comparisonValue = entry.getValue();
+					/*+ Math.sqrt(((2 * Math.log(visited)) / actionsPerformed
+							.get(entry.getKey())));*/
+			
 			if (comparisonValue > value) {
 				value = entry.getValue();
 			}
-			//System.out.print(entry.getValue());
+			// System.out.print(entry.getValue());
 		}
 		return value;
 	}
@@ -81,10 +88,10 @@ public class MDPState {
 		Double value = Double.MIN_VALUE;
 		int actionKey = 0;
 		for (Entry<Integer, Double> entry : valueActions.entrySet()) {
-			double comparisonValue = entry.getValue()
-					+ Math.sqrt(((2 * Math.log(visited)) / actionsPerformed.get(entry
-							.getKey())));
-			
+			double comparisonValue = entry.getValue();
+				/*	+ Math.sqrt(((2 * Math.log(visited)) / actionsPerformed
+							.get(entry.getKey())));*/
+
 			if (comparisonValue > value) {
 				value = entry.getValue();
 				actionKey = entry.getKey();
@@ -129,9 +136,9 @@ public class MDPState {
 
 	public boolean childExists(MDPState child) {
 		for (int i = 0; i < children.size(); i++) {
-			if (children.get(i).getTargetState() == child.getTargetState()
-					&& children.get(i).getTrackerState() == child
-							.getTrackerState()
+			if (children.get(i).getTargetState().equals(child.getTargetState())
+					&& children.get(i).getTrackerState()
+							.equals(child.getTrackerState())
 					&& children.get(i).getParentActionCode() == child
 							.getParentActionCode()) {
 				return true;
@@ -142,9 +149,11 @@ public class MDPState {
 
 	public MDPState getChild(MDPState child) {
 		for (int i = 0; i < children.size(); i++) {
-			if (children.get(i).getTargetState() == child.getTargetState()
-					&& children.get(i).getTrackerState() == child
-							.getTrackerState()) {
+			if (children.get(i).getTargetState().equals(child.getTargetState())
+					&& children.get(i).getTrackerState()
+							.equals(child.getTrackerState())
+					&& children.get(i).getParentActionCode() == child
+							.getParentActionCode()) {
 				return children.get(i);
 			}
 		}
@@ -224,6 +233,20 @@ public class MDPState {
 	 */
 	public void setVisited(int visited) {
 		this.visited = visited;
+	}
+
+	/**
+	 * @return the depth
+	 */
+	public int getDepth() {
+		return depth;
+	}
+
+	/**
+	 * @param depth the depth to set
+	 */
+	public void setDepth(int depth) {
+		this.depth = depth;
 	}
 
 }

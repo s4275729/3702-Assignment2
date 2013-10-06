@@ -139,14 +139,15 @@ public class TrackerTools {
 		AgentState divergedTrackerState = getNextTrackerState(
 				currentState.getTrackerState(), divergedAction,
 				targetPolicy.getGrid());
-		MDPState divergedState = new MDPState(divergedTrackerState,
-				targetPolicy.getAction(currentState.getTargetState())
-						.getResultingState());
+		MDPState divergedState = new MDPState(targetPolicy.getAction(currentState.getTargetState())
+				.getResultingState(), divergedTrackerState
+				);
 
+		divergedState.setParentActionCode(action);
+		divergedState.setDepth(planningHorizon);
 		// add s' as a child
 		if (!currentState.childExists(divergedState)) {
 			currentState.addChild(divergedState);
-			divergedState.setParentActionCode(action);
 			if (probabilities != null) {
 				divergedState.setProbability(probabilities[divergedAction]);
 			} else {
@@ -155,6 +156,7 @@ public class TrackerTools {
 		} else {
 			divergedState = currentState.getChild(divergedState);
 		}
+		
 		generateATrace(planningHorizon + 1, divergedState, targetPolicy,
 				targetMotionHistory, trackerMotionHistory, targetSense,
 				trackerSense, obstacles, goalRegion);
