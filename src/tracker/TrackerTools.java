@@ -25,7 +25,7 @@ public class TrackerTools {
 			202.5, 225, 315, 337.5, 247.5, 270, 292.5 };
 	final int[] keys = { 1, 2, 3, 5, 6, 8, 9, 10, 14, 15, 16, 18, 19, 21, 22,
 			23 };
-	private static int PLANNING_HORIZON = 2;
+	private static int PLANNING_HORIZON = 3;
 
 	/**
 	 * Utility/reward function
@@ -73,7 +73,7 @@ public class TrackerTools {
 			generateATrace(0, root, targetPolicy, targetMotionHistory,
 					trackerMotionHistory, trackerSense, trackerSense, obstacles, goalRegion);
 		}
-		//best action to take = 
+		//System.out.println(root.children.get(0).children.get(0).getVisited());
 		return getPossibleActions(root.getTrackerState(), targetPolicy.getGrid()).get(root.getAction());
 	}
 
@@ -84,9 +84,8 @@ public class TrackerTools {
 			SensingParameters trackerSense, List<RectRegion> obstacles, RectRegion goalRegion) {
 		if (planningHorizon > PLANNING_HORIZON)
 			return 0;
-
 		currentState.setVisited(currentState.getVisited() + 1);
-		
+
 		// select an action
 		HashMap<Integer, TrackerAction> actionmap = getPossibleActions(currentState.getTrackerState(),
 				targetPolicy.getGrid()); // randomly select an action
@@ -102,22 +101,20 @@ public class TrackerTools {
 			count ++;
 		}
 
-
 		if (currentState.actionsPerformed.containsKey(action)) {
 			int numberOfTimes = currentState.actionsPerformed.get(action);
 			currentState.actionsPerformed.put(action, numberOfTimes + 1);
 		} else {
 			currentState.actionsPerformed.put(action, 1);
 		}
+
+		//System.out.println(currentState.actionsPerformed.entrySet());
 		AgentState nextTrackerState = getNextTrackerState(
 				currentState.getTrackerState(), action, targetPolicy.getGrid());
 
-		MDPState nextState = new MDPState(nextTrackerState, targetPolicy
-				.getAction(currentState.getTargetState()).getResultingState());
+		MDPState nextState = new MDPState(targetPolicy
+				.getAction(currentState.getTargetState()).getResultingState(),nextTrackerState);
 
-		System.out.println(currentState.getTargetState() + "accordin to policy= " + targetPolicy
-				.getAction(currentState.getTargetState()).getResultingState() + "nextmove = " + nextState.getTargetState());
-		
 		double r_sa = targetUtility(targetMotionHistory,
 				nextState.getTargetState(), nextState.getTrackerState(),
 				targetPolicy, trackerSense, trackerSense, obstacles, goalRegion);
@@ -157,7 +154,7 @@ public class TrackerTools {
 		} else {
 			divergedState = currentState.getChild(divergedState);
 		}
-		generateATrace(planningHorizon + 1, nextState, targetPolicy,
+		generateATrace(planningHorizon + 1, divergedState, targetPolicy,
 				targetMotionHistory, trackerMotionHistory, targetSense,
 				trackerSense, obstacles, goalRegion);
 
@@ -365,13 +362,16 @@ public class TrackerTools {
 					AgentState resultTargetState = new AgentState(
 							grid.getCentre(nextCell), grid.getHeading(i));
 
-					boolean canMove = GeomTools.canMove(
+					boolean hitObstacles = !GeomTools.canMove(
 							targetState.getPosition(),
 							resultTargetState.getPosition(),
 							targetState.hasCamera(),
 							targetState.getCameraArmLength(), obstacles);
+					
+					boolean outOfBounds = 	resultTargetState.getPosition().getX() < 0 || 
+											resultTargetState.getPosition().getY() < 0;	
 
-					if (!canMove) {
+					if (outOfBounds || hitObstacles) {
 						probabilities[4] += probabilities[i];
 						probabilities[i] = 0;
 					}
@@ -409,13 +409,16 @@ public class TrackerTools {
 					AgentState nextTrackerState = getNextTrackerState(
 							trackerState, i, grid);
 
-					boolean canMove = GeomTools.canMove(
+					boolean hitObstacles = !GeomTools.canMove(
 							trackerState.getPosition(),
 							nextTrackerState.getPosition(),
 							trackerState.hasCamera(),
 							trackerState.getCameraArmLength(), obstacles);
+					
+					boolean outOfBounds = 	nextTrackerState.getPosition().getX() < 0 || 
+											nextTrackerState.getPosition().getY() < 0;	
 
-					if (!canMove) {
+					if (outOfBounds || hitObstacles) {
 						probabilities[12] += probabilities[i];
 						probabilities[i] = 0;
 					}

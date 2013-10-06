@@ -32,6 +32,15 @@ public class MDPState {
 		actionsPerformed = new HashMap<Integer, Integer>();
 	}
 
+	public String toString() {
+		String tostring = "tracker: " + this.trackerState + " target: " + this.targetState + "\n";
+		
+		for (int i = 0; i < children.size(); i ++) {
+			tostring+="child" + children.get(i).toString();
+		}
+		return tostring;
+		
+	}
 	public void setRewardAction(int action, double value) {
 		rewardActions.put(action, value);
 	}
@@ -43,8 +52,9 @@ public class MDPState {
 		// += children * probability
 		for (int i = 0; i < children.size(); i++) {
 			if (children.get(i).getParentActionCode() == action) {
-				value += children.get(i).getProbability()
+				double childValue =  children.get(i).getProbability()
 						* children.get(i).getValue();
+				value += childValue;
 			}
 		}
 		valueActions.put(action, value);
@@ -52,14 +62,15 @@ public class MDPState {
 
 	public double getValue() {
 		// return max of actions keys
-		Double value = -1.0;
+		Double value = Double.MIN_VALUE;
 		for (Entry<Integer, Double> entry : valueActions.entrySet()) {
 			double comparisonValue = entry.getValue()
-					+ Math.sqrt(((2 * Math.log10(visited)) / actionsPerformed.get(entry
+					+ Math.sqrt(((2 * Math.log(visited)) / actionsPerformed.get(entry
 							.getKey())));
 			if (comparisonValue > value) {
 				value = entry.getValue();
 			}
+			//System.out.print(entry.getValue());
 		}
 		return value;
 	}
@@ -67,12 +78,13 @@ public class MDPState {
 	public int getAction() {
 		// get action that returns highest value
 		// return max of actions keys
-		Double value = -1.0;
+		Double value = Double.MIN_VALUE;
 		int actionKey = 0;
 		for (Entry<Integer, Double> entry : valueActions.entrySet()) {
 			double comparisonValue = entry.getValue()
-					+ Math.sqrt(((2 * Math.log10(visited)) / actionsPerformed.get(entry
+					+ Math.sqrt(((2 * Math.log(visited)) / actionsPerformed.get(entry
 							.getKey())));
+			
 			if (comparisonValue > value) {
 				value = entry.getValue();
 				actionKey = entry.getKey();

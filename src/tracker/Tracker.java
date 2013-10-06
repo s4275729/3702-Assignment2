@@ -175,19 +175,21 @@ public class Tracker implements Agent {
 		AgentState currentTargetState = targetState;
 		targetState = targetPolicy.getAction(targetState).getResultingState();
 
-		/* grade 5
 		TrackerTools.maxUtility(2, targetPolicy, currentTargetState,
 				targetMotionHistory, myState, targetSensingParams,
 				mySensingParams, obstacles, goalRegion);
 
-		return TrackerTools.a;*/
+		// grade 6
+		TrackerAction ta = TrackerTools.rolloutPlanning(20000,
+				currentTargetState, myState, targetPolicy, targetMotionHistory,
+				myMotionHistory, mySensingParams, mySensingParams, obstacles,
+				goalRegion);		
 		
-		//grade 6
-		return TrackerTools.rolloutPlanning(100, currentTargetState,
-				myState, targetPolicy, targetMotionHistory, myMotionHistory,
-				mySensingParams, mySensingParams, obstacles, goalRegion);
+		
+		return ta;
+		// System.out.print(ta);
+		// return TrackerTools.a;
 
-		
 	}
 
 	public int getActionCode(double[] probability) {
