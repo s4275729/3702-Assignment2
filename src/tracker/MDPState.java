@@ -61,7 +61,7 @@ public class MDPState {
 						* children.get(i).getMaxValue();
 			}
 		}
-		childValue *= Math.pow(0.95, depth);
+		childValue *= Math.pow(0.7, depth);
 		value += childValue;
 		
 		valueActions.put(action, value);
