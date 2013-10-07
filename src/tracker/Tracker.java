@@ -178,9 +178,9 @@ public class Tracker implements Agent {
 
 		// grade 6
 		
-		TrackerAction ta = TrackerTools.rolloutPlanning(30000,
+		TrackerAction ta = TrackerTools.rolloutPlanning(1200,
 				currentTargetState, myState, targetPolicy, targetMotionHistory,
-				myMotionHistory, mySensingParams, mySensingParams, obstacles,
+				myMotionHistory, targetSensingParams, mySensingParams, obstacles,
 				goalRegion);		
 		System.out.println("Action decided. Time elapsed: " + (System.currentTimeMillis() - startTime)/1000 + "seconds");
 		

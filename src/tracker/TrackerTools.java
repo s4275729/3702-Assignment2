@@ -26,7 +26,7 @@ public class TrackerTools {
 			202.5, 225, 315, 337.5, 247.5, 270, 292.5 };
 	final int[] keys = { 1, 2, 3, 5, 6, 8, 9, 10, 14, 15, 16, 18, 19, 21, 22,
 			23 };
-	private static int PLANNING_HORIZON = 3;
+	private static int PLANNING_HORIZON = 1;
 
 	/**
 	 * Utility/reward function
@@ -59,8 +59,15 @@ public class TrackerTools {
 		if (goalRegion.getRect().contains(trackerState.getPosition())
 				&& reward < 1) {
 			// dont want to be entering the goal
-			reward -= 0.5;
+			reward -= 0.7;
 		}
+		/*
+		 * double angleToTarget= getAngleToTarget(trackerState, targetState);
+		 * double range = Math.toRadians(45); if (trackerState.getHeading() <
+		 * (angleToTarget + (0.5 * range)) && trackerState.getHeading() >
+		 * (angleToTarget - (0.5 * range))) { reward += 0.3; //want to be
+		 * pointing at the target }
+		 */
 		return reward;
 	}
 
@@ -74,11 +81,11 @@ public class TrackerTools {
 
 		for (int i = 0; i < numberOfTimes; i++) {
 			generateATrace(0, root, targetPolicy, targetMotionHistory,
-					trackerMotionHistory, trackerSense, trackerSense,
-					obstacles, goalRegion);
+					trackerMotionHistory, targetSense, trackerSense, obstacles,
+					goalRegion);
 		}
 		// System.out.println(root.children.get(0).children.get(0).getVisited());
-		System.out.println("Utility:" + root.getMaxValue());
+		System.out.println("Action Code: " + root.getAction());
 		return getPossibleActions(root.getTrackerState(),
 				targetPolicy.getGrid()).get(root.getAction());
 	}
@@ -93,9 +100,10 @@ public class TrackerTools {
 			return 0;
 		currentState.setVisited(currentState.getVisited() + 1);
 
+		TargetGrid grid = targetPolicy.getGrid();
 		// select an action
-		HashMap<Integer, TrackerAction> actionmap = getFeasibleActions(
-				currentState.getTrackerState(), currentState.getTargetState(), targetPolicy.getGrid());
+		HashMap<Integer, TrackerAction> actionmap = getPossibleActions(
+				currentState.getTrackerState(), grid);
 
 		Random r = new Random();
 		int random = r.nextInt(actionmap.keySet().size());
@@ -105,36 +113,38 @@ public class TrackerTools {
 		for (Integer key : actionmap.keySet()) {
 			if (count == random) {
 				// select an action uniformly at random
-				//action = key;
+				// action = key;
 			}
 
-			// select an action via multiarm bandit
 			if (!currentState.actionsPerformed.containsKey(key)) {
 				currentState.actionsPerformed.put(key, 1);
 			}
 
+			// select an action via multiarm bandit if
 			if (!currentState.rewardActions.containsKey(key)) {
 				AgentState nextTrackerState = getNextTrackerState(
-						currentState.getTrackerState(), key, targetPolicy.getGrid());
+						currentState.getTrackerState(), key, grid);
 
 				MDPState nextState = new MDPState(targetPolicy.getAction(
 						currentState.getTargetState()).getResultingState(),
 						nextTrackerState);
 
-				double r_sa = targetUtility(targetMotionHistory,
-						nextState.getTargetState(), nextState.getTrackerState(),
-						targetPolicy, trackerSense, trackerSense, obstacles, goalRegion);
+				double r_sa = MDPUtility(targetMotionHistory, nextState,
+						targetPolicy, trackerSense, trackerSense, obstacles,
+						goalRegion);
 				currentState.setRewardAction(key, r_sa);
 			}
 			currentState.updateValue(key);
-			
+
 			double traceValue = Math.sqrt(((2 * Math.log(currentState
-					.getVisited())) / currentState.actionsPerformed.get(key))) + currentState.valueActions.get(key);
+					.getVisited())) / currentState.actionsPerformed.get(key)))
+					+ currentState.valueActions.get(key);
 
 			if (maxValue < traceValue) {
 				maxValue = traceValue;
 				action = key;
 			}
+
 			count++;
 		}
 
@@ -144,37 +154,73 @@ public class TrackerTools {
 
 		// System.out.println(currentState.actionsPerformed.entrySet());
 		AgentState nextTrackerState = getNextTrackerState(
-				currentState.getTrackerState(), action, targetPolicy.getGrid());
-
-		MDPState nextState = new MDPState(targetPolicy.getAction(
-				currentState.getTargetState()).getResultingState(),
+				currentState.getTrackerState(), action, grid);
+		MDPState nextState = new MDPState(currentState.getTargetState(),
 				nextTrackerState);
 
-		double r_sa = targetUtility(targetMotionHistory,
-				nextState.getTargetState(), nextState.getTrackerState(),
-				targetPolicy, trackerSense, trackerSense, obstacles, goalRegion);
+		double r_sa = MDPUtility(targetMotionHistory, nextState, targetPolicy,
+				trackerSense, trackerSense, obstacles, goalRegion);
 		currentState.setRewardAction(action, r_sa);
 
 		// sample a next state according to T(s,a,s')
-		double[] probabilities = getTrackerDivergenceProbability(
-				trackerMotionHistory, action, currentState.getTrackerState(),
-				targetPolicy.getGrid(), obstacles);
+		double[] probabilities = null;
+		/*
+		 * double[] probabilities = getTrackerDivergenceProbability(
+		 * trackerMotionHistory, action, currentState.getTrackerState(),
+		 * targetPolicy.getGrid(), obstacles);
+		 */
 
+		// simulate diverging tracker state
 		int divergedAction = action;
+		double divergedActionProbability = 0;
 		if (probabilities != null) {
 			divergedAction = simulateStateByProbability(probabilities);
 			if (divergedAction == -1) {
 				// no divergence
 				divergedAction = action;
+				divergedActionProbability = 1;
 				probabilities = null;
+			} else {
+				divergedActionProbability = probabilities[divergedAction];
 			}
+		} else {
+			divergedActionProbability = 1;
+		}
+		AgentState divergedTrackerState = getNextTrackerState(
+				currentState.getTrackerState(), divergedAction, grid);
+
+		// simulate diverging target state
+
+		double divergedTargetProbability = 0;
+		int divergedTargetAction = grid.encodeAction(targetPolicy
+				.getAction(currentState.getTargetState()));
+		double[] targetProbabilities = getTargetDivergenceProbability(
+				targetMotionHistory, divergedTargetAction, grid,
+				currentState.getTargetState(), obstacles);
+
+		if (targetProbabilities != null) {
+			divergedTargetAction = simulateStateByProbability(targetProbabilities);
+			if (divergedAction == -1) {
+				// no divergence
+				divergedTargetAction = targetPolicy.getGrid().encodeAction(
+						targetPolicy.getAction(currentState.getTargetState()));
+				divergedTargetProbability = 1;
+				targetProbabilities = null;
+			} else {
+				divergedTargetProbability = targetProbabilities[divergedTargetAction];
+			}
+		} else {
+			divergedTargetProbability = 1;
 		}
 
-		AgentState divergedTrackerState = getNextTrackerState(
-				currentState.getTrackerState(), divergedAction,
-				targetPolicy.getGrid());
-		MDPState divergedState = new MDPState(targetPolicy.getAction(
-				currentState.getTargetState()).getResultingState(),
+		GridCell nextCell = grid.decodeFromIndices(
+				grid.getCell(currentState.getTargetState().getPosition()),
+				divergedTargetAction);
+		AgentState divergedTargetState = new AgentState(
+				grid.getCentre(nextCell), grid.getHeading(divergedTargetAction));
+		// AgentState divergedTargetState =
+		// targetPolicy.getAction(currentState.getTargetState()).getResultingState();
+		MDPState divergedState = new MDPState(divergedTargetState,
 				divergedTrackerState);
 
 		divergedState.setParentActionCode(action);
@@ -182,11 +228,12 @@ public class TrackerTools {
 		// add s' as a child
 		if (!currentState.childExists(divergedState)) {
 			currentState.addChild(divergedState);
-			if (probabilities != null) {
-				divergedState.setProbability(probabilities[divergedAction]);
-			} else {
-				divergedState.setProbability(1.0);
-			}
+			divergedState.setProbability(divergedActionProbability
+					* divergedTargetProbability);
+			// System.out.print("PROB: " + divergedActionProbability *
+			// divergedTargetProbability);
+			// divergedState.setTargetProbability(divergedTargetProbability);
+
 		} else {
 			divergedState = currentState.getChild(divergedState);
 		}
@@ -196,24 +243,39 @@ public class TrackerTools {
 				trackerSense, obstacles, goalRegion);
 
 		currentState.updateValue(action);
+		/*
+		 * System.out.println("horizon" + planningHorizon + " " +
+		 * currentState.getMaxValue() + "size: " + currentState.children.size()
+		 * + "reward: " + currentState.rewardActions.get(action));
+		 */
 		return 0;
 	}
 
-	public static double targetUtility(MotionHistory targetMotionHistory,
-			AgentState targetState, AgentState trackerState,
-			TargetPolicy targetPolicy, SensingParameters targetSense,
-			SensingParameters trackerSense, List<RectRegion> obstacles,
-			RectRegion goalRegion) {
-		game.Action expectedAction = targetPolicy.getAction(targetState);
-		TargetGrid grid = targetPolicy.getGrid();
-		double[] probs = getTargetDivergenceProbability(targetMotionHistory,
-				grid.encodeAction(expectedAction), grid, targetState, obstacles);
+	public static double MDPUtility(MotionHistory targetMotionHistory,
+			MDPState state, TargetPolicy targetPolicy,
+			SensingParameters targetSense, SensingParameters trackerSense,
+			List<RectRegion> obstacles, RectRegion goalRegion) {
 
 		double sum = 0;
+
+		sum += utility(state.getTrackerState(), state.getTargetState(),
+				targetSense, trackerSense, obstacles, goalRegion);
+
+		game.Action expectedAction = targetPolicy.getAction(state
+				.getTargetState());
+		TargetGrid grid = targetPolicy.getGrid();
+		double[] probs = getTargetDivergenceProbability(targetMotionHistory,
+				grid.encodeAction(expectedAction), grid,
+				state.getTargetState(), obstacles);
+		if (probs == null) {
+			probs = new double[9];
+			probs[grid.encodeAction(targetPolicy.getAction(state
+					.getTargetState()))] = 1;
+		}
 		for (int i = 0; i < 9; i++) {
 			if (probs[i] != 0) {
 				GridCell nextCell = grid.decodeFromIndices(
-						grid.getCell(targetState.getPosition()), i);
+						grid.getCell(state.getTargetState().getPosition()), i);
 				AgentState resultTargetState = new AgentState(
 						grid.getCentre(nextCell), i);
 
@@ -221,13 +283,13 @@ public class TrackerTools {
 				// and
 				// resulting target state
 				double utility = probs[i]
-						* utility(trackerState, resultTargetState, targetSense,
-								trackerSense, obstacles, goalRegion);
+						* utility(state.getTrackerState(), resultTargetState,
+								targetSense, trackerSense, obstacles,
+								goalRegion);
 				sum += utility;
 			}
 		}
-		sum += utility(trackerState, targetState, targetSense,
-				trackerSense, obstacles, goalRegion);
+		// sum *= state.getTargetProbability();
 		return sum;
 	}
 
@@ -237,7 +299,7 @@ public class TrackerTools {
 		Random r = new Random();
 		double random = r.nextDouble();
 
-		for (int i = 0; i < 25; i++) {
+		for (int i = 0; i < probabilities.length; i++) {
 			if (probabilities[i] == 0)
 				continue;
 			if (random >= sum && random < sum + probabilities[i]) {
@@ -283,6 +345,11 @@ public class TrackerTools {
 					targetMotionHistory,
 					grid.encodeAction(targetPolicy.getAction(targetState)),
 					grid, targetState, obstacles);
+
+			if (probs == null) {
+				// probs = new double[9];
+				probs[grid.encodeAction(targetPolicy.getAction(targetState))] = 1;
+			}
 
 			for (Integer key : actionSet) {
 				TrackerAction act = actions.get(key);

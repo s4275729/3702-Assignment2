@@ -15,6 +15,7 @@ public class MDPState {
 	private boolean isChanged = true;
 	private int parentActionCode = -1;
 	private double probability = 1;
+	private double targetProbability = 1;
 	private double reward = 0;
 	private int depth;
 	List<MDPState> children;
@@ -51,6 +52,7 @@ public class MDPState {
 	public void updateValue(int action) {
 		double value = 0;
 		value += rewardActions.get(action);
+		
 		double childValue = 0;
 		// += children * probability
 		for (int i = 0; i < children.size(); i++) {
@@ -72,9 +74,10 @@ public class MDPState {
 			double comparisonValue = entry.getValue();
 			if (comparisonValue > value) {
 				value = entry.getValue();
+				
 			}
-			// System.out.print(entry.getValue());
 		}
+		if (value == Double.MIN_VALUE) return 0;
 		return value;
 	}
 
@@ -240,6 +243,20 @@ public class MDPState {
 	 */
 	public void setDepth(int depth) {
 		this.depth = depth;
+	}
+
+	/**
+	 * @return the targetProbability
+	 */
+	public double getTargetProbability() {
+		return targetProbability;
+	}
+
+	/**
+	 * @param targetProbability the targetProbability to set
+	 */
+	public void setTargetProbability(double targetProbability) {
+		this.targetProbability = targetProbability;
 	}
 
 }

@@ -1097,6 +1097,8 @@ public class GameRunner {
 			if (result == 1) {
 				numWins += 1;
 			}
+			System.out.println(String.format("Tracker won %d of %d games.",
+					numWins, i+1));
 		}
 		System.out.println(String.format("Tracker won %d of %d games.",
 				numWins, numGames));
