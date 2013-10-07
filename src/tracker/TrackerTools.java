@@ -86,8 +86,8 @@ public class TrackerTools {
 		}
 		// System.out.println(root.children.get(0).children.get(0).getVisited());
 		System.out.println("Action Code: " + root.getAction());
-		return getPossibleActions(root.getTrackerState(),
-				targetPolicy.getGrid()).get(root.getAction());
+		return getAllPossibleActions(root.getTrackerState(),
+				targetPolicy.getGrid(), trackerSense).get(root.getAction());
 	}
 
 	public static double generateATrace(int planningHorizon,
@@ -102,8 +102,8 @@ public class TrackerTools {
 
 		TargetGrid grid = targetPolicy.getGrid();
 		// select an action
-		HashMap<Integer, TrackerAction> actionmap = getPossibleActions(
-				currentState.getTrackerState(), grid);
+		HashMap<Integer, TrackerAction> actionmap = getAllPossibleActions(
+				currentState.getTrackerState(), grid, trackerSense);
 
 		Random r = new Random();
 		int random = r.nextInt(actionmap.keySet().size());
@@ -123,7 +123,7 @@ public class TrackerTools {
 			// select an action via multiarm bandit if
 			if (!currentState.rewardActions.containsKey(key)) {
 				AgentState nextTrackerState = getNextTrackerState(
-						currentState.getTrackerState(), key, grid);
+						currentState.getTrackerState(), key, grid, trackerSense);
 
 				MDPState nextState = new MDPState(targetPolicy.getAction(
 						currentState.getTargetState()).getResultingState(),
@@ -154,7 +154,7 @@ public class TrackerTools {
 
 		// System.out.println(currentState.actionsPerformed.entrySet());
 		AgentState nextTrackerState = getNextTrackerState(
-				currentState.getTrackerState(), action, grid);
+				currentState.getTrackerState(), action, grid, trackerSense);
 		MDPState nextState = new MDPState(currentState.getTargetState(),
 				nextTrackerState);
 
@@ -187,7 +187,7 @@ public class TrackerTools {
 			divergedActionProbability = 1;
 		}
 		AgentState divergedTrackerState = getNextTrackerState(
-				currentState.getTrackerState(), divergedAction, grid);
+				currentState.getTrackerState(), divergedAction, grid, trackerSense);
 
 		// simulate diverging target state
 
@@ -334,8 +334,8 @@ public class TrackerTools {
 			Integer maxActionKey = 1;
 
 			// get a list of possible actions
-			HashMap<Integer, TrackerAction> actions = getPossibleActions(
-					trackerState, grid);
+			HashMap<Integer, TrackerAction> actions = getAllPossibleActions(
+					trackerState, grid, trackerSense);
 			Set<Integer> actionSet = actions.keySet();
 
 			// System.out.print(targetState);
@@ -433,6 +433,7 @@ public class TrackerTools {
 
 		return Math.atan2(targetY, targetX);
 	}
+	
 
 	/**
 	 * Provide an array of probability given the desired action of the target
@@ -476,9 +477,10 @@ public class TrackerTools {
 							targetState.hasCamera(),
 							targetState.getCameraArmLength(), obstacles);
 
-					boolean outOfBounds = resultTargetState.getPosition()
-							.getX() < 0
-							|| resultTargetState.getPosition().getY() < 0;
+					boolean outOfBounds = 	resultTargetState.getPosition().getX() < 0
+											|| resultTargetState.getPosition().getY() < 0 
+											|| resultTargetState.getPosition().getX() > 1
+											|| resultTargetState.getPosition().getY() > 1;
 
 					if (outOfBounds || hitObstacles) {
 						probabilities[4] += probabilities[i];
@@ -494,7 +496,7 @@ public class TrackerTools {
 
 	public static double[] getTrackerDivergenceProbability(MotionHistory mh,
 			int desiredAction, AgentState trackerState, TargetGrid grid,
-			List<RectRegion> obstacles) {
+			List<RectRegion> obstacles, SensingParameters trackerSense) {
 		List<HistoryEntry> history = mh.getHistory();
 
 		double[] actionCount = new double[25];
@@ -515,7 +517,7 @@ public class TrackerTools {
 
 				if (probabilities[i] > 0) {
 					AgentState nextTrackerState = getNextTrackerState(
-							trackerState, i, grid);
+							trackerState, i, grid, trackerSense);
 
 					boolean hitObstacles = !GeomTools.canMove(
 							trackerState.getPosition(),
@@ -523,9 +525,11 @@ public class TrackerTools {
 							trackerState.hasCamera(),
 							trackerState.getCameraArmLength(), obstacles);
 
-					boolean outOfBounds = nextTrackerState.getPosition().getX() < 0
-							|| nextTrackerState.getPosition().getY() < 0;
-
+					boolean outOfBounds =  nextTrackerState.getPosition().getX() < 0
+										|| nextTrackerState.getPosition().getY() < 0 
+										|| nextTrackerState.getPosition().getX() > 1
+										|| nextTrackerState.getPosition().getY() > 1;
+					
 					if (outOfBounds || hitObstacles) {
 
 						probabilities[12] += probabilities[i];
@@ -540,10 +544,10 @@ public class TrackerTools {
 	}
 
 	public static AgentState getNextTrackerState(
-			AgentState currentTrackerState, int actionKey, TargetGrid grid) {
+			AgentState currentTrackerState, int actionKey, TargetGrid grid, SensingParameters trackerSense) {
 		double distance = 1.0 / grid.getGridSize();
-		HashMap<Integer, TrackerAction> actionsList = getPossibleActions(
-				currentTrackerState, grid);
+		HashMap<Integer, TrackerAction> actionsList = getAllPossibleActions(
+				currentTrackerState, grid, trackerSense);
 
 		TrackerAction selectedAction = actionsList.get(actionKey);
 
@@ -590,17 +594,93 @@ public class TrackerTools {
 				similarAction = actionsList.get(18);
 				selectedAction = new TrackerAction(currentTrackerState,
 						similarAction.getHeading(), (2 * distance));
-				break;
+				break;		
 			}
 		}
 
 		return selectedAction.getResultingState();
 	}
 
-	public static HashMap<Integer, TrackerAction> getFeasibleActions(
+	public static HashMap<Integer, TrackerAction> getAllFeasibleActions(
+			AgentState trackerState, AgentState targetState, TargetGrid grid, SensingParameters trackerSense) {
+		
+		HashMap<Integer, TrackerAction> feasibleActions = new HashMap<Integer, TrackerAction>();
+		HashMap<Integer, TrackerAction> possibleActions = getPossibleMovementActions(trackerState, grid);
+		HashMap<Integer, TrackerAction> cameraAdjustmentActions = getPossibleCameraAdjustmentActions(trackerState, trackerSense);
+
+		double angleToTarget = getAngleToTarget(trackerState, targetState);
+		double distanceToTarget = getDistanceToTarget(trackerState, targetState);
+		double range = Math.toRadians(90);
+		
+
+		Set<Integer> keySet = possibleActions.keySet();
+
+		for (Integer key : keySet) {
+			double actionHeading = possibleActions.get(key).getHeading();
+
+			if (actionHeading > (angleToTarget - range)
+					|| actionHeading < (angleToTarget + range)) {
+				feasibleActions.put(key, possibleActions.get(key));
+			}
+		}
+		
+		double angleFromArmToTarget = angleToTarget + (Math.toRadians(90) - trackerState.getHeading());
+		double orthogonalTargetDistance = distanceToTarget * Math.cos(angleFromArmToTarget);
+		double orthogonalTargetHeight = distanceToTarget * Math.sin(angleFromArmToTarget);
+		double currentArmLength = trackerState.getCameraArmLength();
+		
+		// The field of view is extended by 0.05 because of the cone shape.
+		double maxFieldOfView = trackerSense.getMaxLength() + 0.05;
+		double minFieldOfView = trackerSense.getMinLength() - 0.05;
+		
+		//System.out.println("Max FOV: " + maxFieldOfView);
+		//System.out.println("Min FOV: " + minFieldOfView);
+		// If the target is on the right hand side and inside the possible field view of the camera
+		if(angleFromArmToTarget <= range && orthogonalTargetHeight <= trackerSense.getRange() 
+		   && orthogonalTargetDistance <= maxFieldOfView && orthogonalTargetDistance >= minFieldOfView)
+		{
+			Set<Integer> cameraKeyset = cameraAdjustmentActions.keySet();
+			
+			for(Integer key : cameraKeyset)
+			{
+				double newLength = cameraAdjustmentActions.get(key).getResultingState().getCameraArmLength();
+				
+				if(orthogonalTargetDistance <= currentArmLength && newLength <= currentArmLength)
+				{
+					//System.out.println("SHORTEN, current arm: " + currentArmLength + " Target's orthogonal: " + orthogonalTargetDistance + " new arm: " + newLength);
+					feasibleActions.put(key, cameraAdjustmentActions.get(key));
+				}
+				
+				if(orthogonalTargetDistance > currentArmLength && newLength > currentArmLength)
+				{
+					//System.out.println("LENGTHEN, current arm: " + currentArmLength + " Target's orthogonal: " + orthogonalTargetDistance + " new arm: " + newLength);
+					feasibleActions.put(key, cameraAdjustmentActions.get(key));
+				}
+			}
+		}
+
+		return feasibleActions;
+	}
+	
+	public static HashMap<Integer, TrackerAction> getAllPossibleActions(
+			AgentState currentTrackerState, TargetGrid grid, SensingParameters trackerSense)
+	{
+		HashMap<Integer, TrackerAction> allActions = new HashMap<Integer, TrackerAction>();
+	
+		allActions.putAll(getPossibleMovementActions(currentTrackerState, grid));
+		
+		if(currentTrackerState.hasCamera())
+		{
+			allActions.putAll(getPossibleCameraAdjustmentActions(currentTrackerState, trackerSense));
+		}
+		
+		return allActions;
+	}
+	
+	public static HashMap<Integer, TrackerAction> getFeasibleMovementActions(
 			AgentState trackerState, AgentState targetState, TargetGrid grid) {
 		HashMap<Integer, TrackerAction> feasibleActions = new HashMap<Integer, TrackerAction>();
-		HashMap<Integer, TrackerAction> possibleActions = getPossibleActions(
+		HashMap<Integer, TrackerAction> possibleActions = getPossibleMovementActions(
 				trackerState, grid);
 
 		double angleToTarget = getAngleToTarget(trackerState, targetState);
@@ -620,7 +700,7 @@ public class TrackerTools {
 		return feasibleActions;
 	}
 
-	public static HashMap<Integer, TrackerAction> getPossibleActions(
+	public static HashMap<Integer, TrackerAction> getPossibleMovementActions(
 			AgentState currentTrackerState, TargetGrid grid) {
 		HashMap<Integer, TrackerAction> possibleActions = new HashMap<Integer, TrackerAction>();
 		double distance = 1.0 / grid.getGridSize();
@@ -709,8 +789,83 @@ public class TrackerTools {
 
 		possibleActions.put(1223, new TrackerAction(currentTrackerState,
 				GeomTools.normaliseAngle(Math.toRadians(292.5)), 0));
-
+		
 		return possibleActions;
 	}
+	
+	public static HashMap<Integer, TrackerAction> getFeasibleCameraAdjustmentActions(
+			AgentState trackerState, AgentState targetState, TargetGrid grid, SensingParameters trackerSense) {
+		
+		HashMap<Integer, TrackerAction> feasibleActions = new HashMap<Integer, TrackerAction>();
+		HashMap<Integer, TrackerAction> cameraAdjustmentActions = getPossibleCameraAdjustmentActions(trackerState, trackerSense);
 
+		double angleToTarget = getAngleToTarget(trackerState, targetState);
+		double distanceToTarget = getDistanceToTarget(trackerState, targetState);
+		double range = Math.toRadians(90);
+		
+		double angleFromArmToTarget = angleToTarget + (Math.toRadians(90) - trackerState.getHeading());
+		double orthogonalTargetDistance = distanceToTarget * Math.cos(angleFromArmToTarget);
+		double orthogonalTargetHeight = distanceToTarget * Math.sin(angleFromArmToTarget);
+		double currentArmLength = trackerState.getCameraArmLength();
+		
+		// The field of view is extended by 0.05 because of the cone shape.
+		double maxFieldOfView = trackerSense.getMaxLength() + 0.05;
+		double minFieldOfView = trackerSense.getMinLength() - 0.05;
+		
+		//System.out.println("Max FOV: " + maxFieldOfView);
+		//System.out.println("Min FOV: " + minFieldOfView);
+		// If the target is on the right hand side and inside the possible field view of the camera
+		if(angleFromArmToTarget <= range && orthogonalTargetHeight <= trackerSense.getRange() 
+		   && orthogonalTargetDistance <= maxFieldOfView && orthogonalTargetDistance >= minFieldOfView)
+		{
+			Set<Integer> cameraKeyset = cameraAdjustmentActions.keySet();
+			
+			for(Integer key : cameraKeyset)
+			{
+				double newLength = cameraAdjustmentActions.get(key).getResultingState().getCameraArmLength();
+				
+				if(orthogonalTargetDistance <= currentArmLength && newLength <= currentArmLength)
+				{
+					//System.out.println("SHORTEN, current arm: " + currentArmLength + " Target's orthogonal: " + orthogonalTargetDistance + " new arm: " + newLength);
+					feasibleActions.put(key, cameraAdjustmentActions.get(key));
+				}
+				
+				if(orthogonalTargetDistance > currentArmLength && newLength > currentArmLength)
+				{
+					//System.out.println("LENGTHEN, current arm: " + currentArmLength + " Target's orthogonal: " + orthogonalTargetDistance + " new arm: " + newLength);
+					feasibleActions.put(key, cameraAdjustmentActions.get(key));
+				}
+			}
+		}
+
+		return feasibleActions;
+	}
+	
+	public static HashMap<Integer, TrackerAction> getPossibleCameraAdjustmentActions(
+			AgentState trackerState, SensingParameters trackerSense) 
+	{
+		HashMap<Integer, TrackerAction> possibleCameraActions = new HashMap<Integer, TrackerAction>();
+		
+		double maxArmLength = trackerSense.getMaxLength();
+		double minArmLength = trackerSense.getMinLength();
+		
+		// Discretizes the arm length into 10 possible length
+		double step = (maxArmLength - minArmLength) / 10;
+		
+		boolean currentStateExists = false;
+		
+		for(int i = 0; i < 11; i++)
+		{
+			double newArmLength = minArmLength + (step*i);
+			possibleCameraActions.put(30+i, new TrackerAction(trackerState, newArmLength));
+			
+			if(newArmLength == trackerState.getCameraArmLength())
+				currentStateExists = true;
+		}
+		
+		if(!currentStateExists)
+			possibleCameraActions.put(312, new TrackerAction(trackerState, trackerState.getCameraArmLength()));
+		
+		return possibleCameraActions;
+	}
 }

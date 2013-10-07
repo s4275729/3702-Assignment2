@@ -11,8 +11,11 @@ import geom.GridCell;
 import geom.TargetGrid;
 
 import java.awt.geom.Point2D;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
+
 import divergence.MotionHistory;
 import divergence.MotionHistory.HistoryEntry;
 import target.TargetPolicy;
@@ -172,21 +175,26 @@ public class Tracker implements Agent {
 		AgentState currentTargetState = targetState;
 		targetState = targetPolicy.getAction(targetState).getResultingState();
 
-		TrackerTools.maxUtility(2, targetPolicy, currentTargetState,
+		// Grade 5
+		/*TrackerTools.maxUtility(2, targetPolicy, currentTargetState,
 				targetMotionHistory, myState, targetSensingParams,
-				mySensingParams, obstacles, goalRegion);
-
-		// grade 6
+				mySensingParams, obstacles, goalRegion);*/
 		
+		// grade 6
 		TrackerAction ta = TrackerTools.rolloutPlanning(1200,
 				currentTargetState, myState, targetPolicy, targetMotionHistory,
 				myMotionHistory, targetSensingParams, mySensingParams, obstacles,
-				goalRegion);		
+				goalRegion);	
 		System.out.println("Action decided. Time elapsed: " + (System.currentTimeMillis() - startTime)/1000 + "seconds");
 		
-		return ta;
+		
 		// System.out.print(ta);
+		/*if(TrackerTools.a.isCameraAdjustment())
+			System.out.println("Adjusting camera...");
+		else
+			System.out.println("Moving...");*/
+			
 		//return TrackerTools.a;
-
+		return ta;
 	}
 }
