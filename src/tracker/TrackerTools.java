@@ -102,8 +102,8 @@ public class TrackerTools {
 
 		TargetGrid grid = targetPolicy.getGrid();
 		// select an action
-		HashMap<Integer, TrackerAction> actionmap = getAllPossibleActions(
-				currentState.getTrackerState(), grid, trackerSense);
+		HashMap<Integer, TrackerAction> actionmap = getAllFeasibleActions(
+				currentState.getTrackerState(), currentState.getTargetState(), grid, trackerSense);
 
 		Random r = new Random();
 		int random = r.nextInt(actionmap.keySet().size());
@@ -164,11 +164,13 @@ public class TrackerTools {
 
 		// sample a next state according to T(s,a,s')
 		double[] probabilities = null;
-		/*
-		 * double[] probabilities = getTrackerDivergenceProbability(
-		 * trackerMotionHistory, action, currentState.getTrackerState(),
-		 * targetPolicy.getGrid(), obstacles);
-		 */
+		
+		if (trackerMotionHistory != null) {
+			probabilities = getTrackerDivergenceProbability(
+		 trackerMotionHistory, action, currentState.getTrackerState(),
+		 targetPolicy.getGrid(), obstacles, trackerSense);
+		}
+		 
 
 		// simulate diverging tracker state
 		int divergedAction = action;
@@ -605,60 +607,11 @@ public class TrackerTools {
 			AgentState trackerState, AgentState targetState, TargetGrid grid, SensingParameters trackerSense) {
 		
 		HashMap<Integer, TrackerAction> feasibleActions = new HashMap<Integer, TrackerAction>();
-		HashMap<Integer, TrackerAction> possibleActions = getPossibleMovementActions(trackerState, grid);
-		HashMap<Integer, TrackerAction> cameraAdjustmentActions = getPossibleCameraAdjustmentActions(trackerState, trackerSense);
-
-		double angleToTarget = getAngleToTarget(trackerState, targetState);
-		double distanceToTarget = getDistanceToTarget(trackerState, targetState);
-		double range = Math.toRadians(90);
+		feasibleActions.putAll(getFeasibleMovementActions(trackerState, targetState, grid));
 		
-
-		Set<Integer> keySet = possibleActions.keySet();
-
-		for (Integer key : keySet) {
-			double actionHeading = possibleActions.get(key).getHeading();
-
-			if (actionHeading > (angleToTarget - range)
-					|| actionHeading < (angleToTarget + range)) {
-				feasibleActions.put(key, possibleActions.get(key));
-			}
-		}
+		if(trackerState.hasCamera())
+			feasibleActions.putAll(getFeasibleCameraAdjustmentActions(trackerState, targetState, grid, trackerSense));
 		
-		double angleFromArmToTarget = angleToTarget + (Math.toRadians(90) - trackerState.getHeading());
-		double orthogonalTargetDistance = distanceToTarget * Math.cos(angleFromArmToTarget);
-		double orthogonalTargetHeight = distanceToTarget * Math.sin(angleFromArmToTarget);
-		double currentArmLength = trackerState.getCameraArmLength();
-		
-		// The field of view is extended by 0.05 because of the cone shape.
-		double maxFieldOfView = trackerSense.getMaxLength() + 0.05;
-		double minFieldOfView = trackerSense.getMinLength() - 0.05;
-		
-		//System.out.println("Max FOV: " + maxFieldOfView);
-		//System.out.println("Min FOV: " + minFieldOfView);
-		// If the target is on the right hand side and inside the possible field view of the camera
-		if(angleFromArmToTarget <= range && orthogonalTargetHeight <= trackerSense.getRange() 
-		   && orthogonalTargetDistance <= maxFieldOfView && orthogonalTargetDistance >= minFieldOfView)
-		{
-			Set<Integer> cameraKeyset = cameraAdjustmentActions.keySet();
-			
-			for(Integer key : cameraKeyset)
-			{
-				double newLength = cameraAdjustmentActions.get(key).getResultingState().getCameraArmLength();
-				
-				if(orthogonalTargetDistance <= currentArmLength && newLength <= currentArmLength)
-				{
-					//System.out.println("SHORTEN, current arm: " + currentArmLength + " Target's orthogonal: " + orthogonalTargetDistance + " new arm: " + newLength);
-					feasibleActions.put(key, cameraAdjustmentActions.get(key));
-				}
-				
-				if(orthogonalTargetDistance > currentArmLength && newLength > currentArmLength)
-				{
-					//System.out.println("LENGTHEN, current arm: " + currentArmLength + " Target's orthogonal: " + orthogonalTargetDistance + " new arm: " + newLength);
-					feasibleActions.put(key, cameraAdjustmentActions.get(key));
-				}
-			}
-		}
-
 		return feasibleActions;
 	}
 	
