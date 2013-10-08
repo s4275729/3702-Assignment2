@@ -1089,7 +1089,7 @@ public class GameRunner {
 		}
 		
 		//int numGames = 100;
-		int numGames = 10;
+		int numGames = 20;
 		int numWins = 0;
 		for (int i = 0; i < numGames; i++) {
 			int result = runner.runVerbose(outputFile, true);

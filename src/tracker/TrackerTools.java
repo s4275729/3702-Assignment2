@@ -8,7 +8,6 @@ import geom.GeomTools;
 import geom.GridCell;
 import geom.TargetGrid;
 
-import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.HashMap;
 import java.util.List;
@@ -102,8 +101,8 @@ public class TrackerTools {
 
 		TargetGrid grid = targetPolicy.getGrid();
 		// select an action
-		HashMap<Integer, TrackerAction> actionmap = getAllFeasibleActions(
-				currentState.getTrackerState(), currentState.getTargetState(), grid, trackerSense);
+		HashMap<Integer, TrackerAction> actionmap = getAllPossibleActions(
+				currentState.getTrackerState(), grid, trackerSense);
 
 		Random r = new Random();
 		int random = r.nextInt(actionmap.keySet().size());
@@ -348,10 +347,10 @@ public class TrackerTools {
 					grid.encodeAction(targetPolicy.getAction(targetState)),
 					grid, targetState, obstacles);
 
-			if (probs == null) {
+			/*if (probs == null) {
 				// probs = new double[9];
 				probs[grid.encodeAction(targetPolicy.getAction(targetState))] = 1;
-			}
+			}*/
 
 			for (Integer key : actionSet) {
 				TrackerAction act = actions.get(key);
@@ -761,9 +760,8 @@ public class TrackerTools {
 		double orthogonalTargetHeight = distanceToTarget * Math.sin(angleFromArmToTarget);
 		double currentArmLength = trackerState.getCameraArmLength();
 		
-		// The field of view is extended by 0.05 because of the cone shape.
-		double maxFieldOfView = trackerSense.getMaxLength() + 0.05;
-		double minFieldOfView = trackerSense.getMinLength() - 0.05;
+		double maxFieldOfView = trackerSense.getMaxLength();
+		double minFieldOfView = trackerSense.getMinLength();
 		
 		//System.out.println("Max FOV: " + maxFieldOfView);
 		//System.out.println("Min FOV: " + minFieldOfView);

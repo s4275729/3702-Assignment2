@@ -7,17 +7,11 @@ import game.Percept;
 import game.RectRegion;
 import game.SensingParameters;
 import game.TrackerAction;
-import geom.GridCell;
-import geom.TargetGrid;
 
-import java.awt.geom.Point2D;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Random;
-import java.util.Set;
 
 import divergence.MotionHistory;
-import divergence.MotionHistory.HistoryEntry;
+
 import target.TargetPolicy;
 
 public class Tracker implements Agent {
@@ -109,9 +103,8 @@ public class Tracker implements Agent {
 	 * actually starts. If you don't require any setup, leave this method blank.
 	 */
 	public void initialise() {
-		// TODO Write this method!
-		targetState = targetInitialStates.get(0);
 
+		targetState = targetInitialStates.get(0);
 	}
 
 	@Override
@@ -161,7 +154,6 @@ public class Tracker implements Agent {
 	public TrackerAction getAction(int turnNo, ActionResult previousResult,
 			double[] scores, List<Percept> newPercepts) {
 		AgentState myState = previousResult.getResultingState();
-		TargetGrid grid = targetPolicy.getGrid();
 		long startTime = System.currentTimeMillis();
 
 		if (newPercepts.size() != 0) {
@@ -180,7 +172,7 @@ public class Tracker implements Agent {
 				targetMotionHistory, myState, targetSensingParams,
 				mySensingParams, obstacles, goalRegion);*/
 		
-		// grade 6
+		// grade 6 & 7
 		TrackerAction ta = TrackerTools.rolloutPlanning(1200,
 				currentTargetState, myState, targetPolicy, targetMotionHistory,
 				myMotionHistory, targetSensingParams, mySensingParams, obstacles,
